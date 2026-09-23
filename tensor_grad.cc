@@ -24,7 +24,7 @@
 
 // X = TC
 //
-// dX/dT = C
+// dX/dT = git ls-files | xargs wc -lC
 // dX/dT
 
 
@@ -44,6 +44,7 @@
 #include "nn.h"
 #include "losses.h"
 #include "linear.h"
+#include "calc.h"
 
 class Optimizer {
 public:
@@ -63,30 +64,129 @@ public:
 
 };
 
+// THE BACKWARD PASS FOR EACH OPERATOR ON THE TENSOR
+// ASSUMES THAT GRAD FOR THE TENSOR IS CURRENTLY ALREADY CALCULATED
+// BACKPROP THE GRADIENTS IN THE CURRENT ONE TO THE CHILDREN
 
-void training_loop() {
-	
-	// we have one input, which is x. we can create our training set. lets try and predict sin(x) as best as possible and try to interpolate the rest of the points	
-	// lets first set up our model, which is 3 layers of linear with a ReLU in the middle
-	
-	std::vector<Linear> layers = {Linear(1, 50), Linear(50, 100), Linear(100, 50), Linear(50, 1)};
-	
-	Tensor* x = new Tensor(2.0);
-	std::vector<Tensor*>* input = new std::vector<Tensor*>(1);
-	(*input)[0] = x;
-	
-	for (int i=0; i<layers.size(); i++) {
-		// call the layer forward method
-		input = layers[i].forward(input);
-		input = ReLU(input);
-			
-	}
-	
-	Tensor* target = new Tensor(1.0);
-	// we have the input here, now we have to calculate the loss against the target, and call a backward pass
-	Tensor* loss = MSELoss((*input)[0], target);
-	loss->backward();
-
-	std::cout << (*input)[0]->value << std::endl;
-		
+bool verify_predecessor_size(TensorNode* node, int expected) {
+	if (node->predecessors.size() != expected) throw std::runtime_error("Predecessor size is not what is expected"); 
 }
+
+
+// ADD HAS TO BE OF THE SAME SHAPE
+void add_backward(TensorNode* node) {
+	verify_predecessor_size(node, 2);
+	
+	TensorNode* a = node->predecessors[0];
+	TensorNode* b = node->predecessors[1];
+	
+	for (int i=0; i<node->grad.size(); i++) {
+		a->grad[i] += node->grad[i];
+		b->grad[i] += node->grad[i];
+	}
+
+}
+
+// x = a - b 
+// y = f(x)
+// dy/da = dx/da * dx/dy
+// dy/db = dx/db * dx/dy
+// dx/db = -1
+void sub_backward(TensorNode* node) {
+	verify_predecessor_size(node, 2);
+	
+	TensorNode* a = node->predecessors[0];
+	TensorNode* b = node->predecessors[1];
+
+	for (int i=0; i<node->grad.size(); i++) {
+		a->grad[i] += node->grad[i];
+		b->grad[i] -= node->grad[i];
+	}
+}
+
+// x = ab
+// y = f(x)
+// dy/da = dy/dx * dx/da
+// dx = da = b
+// so += grad[node] * b
+
+void mult_backward(TensorNode* node) {
+	verify_predecessor_size(node, 2);
+	
+	TensorNode* a = node->predecessors[0];
+	TensorNode* b = node->predecessors[1];
+
+	for (int i=0; i<node->grad.size(); i++) {
+		a->grad[i] += (node->grad[i] * b->data[i]);
+		b->grad[i] += (node->grad[i] * a->data[i]);
+	}
+
+}
+
+// x = a/b
+// dx/da = 1/b
+// dx/db = -a/b^2
+
+void div_backward(TensorNode* node) {
+	verify_predecessor_size(node, 2);
+
+	TensorNode* a = node->predecessors[0];
+	TensorNode* b = node->predecessors[1];
+	
+	for (int i=0; i<node->grad.size(); i++) {
+		double dda = 1/b->data[i];
+		double b_data = b->data[i];
+		double ddb = -a->data[i] * (1/(b_data * b_data)); 
+		a->grad[i] += (node->grad[i] * dda);
+		b->grad[i] += (node->grad[i] * ddb);
+		
+	}
+
+}
+
+// lets say C = AB for this
+// ddA = B * (ddC)^T
+// ddB = A^T * (ddC)
+
+void MATMUL_2D_backward(TensorNode* node) {
+	verify_predecessor_size(node, 2);
+	
+	TensorNode* A = node->predecessors[0];
+	TensorNode* B = node->predecessors[1];
+	
+	// ddA, first transpose ddC, current node grad is ddC
+	node->permute({1, 0});
+	GEMM_2D_ADD (
+		B->data,
+		B->stride,
+		B->shape,
+		node->grad,
+		node->stride,
+		node->shape,
+		A->grad,
+		A->stride,
+		A->shape
+	);
+
+	// ddC transpose back 
+	node->permute({1, 0});
+	
+	// transpose A	
+	A->permute({1, 0});
+	GEMM_2D_ADD (
+		A->data,
+		A->stride,
+		A->shape,
+		node->grad,
+		node->stride,
+		node->shape,
+		B->grad,
+		B->stride,
+		B->shape
+	);
+	// transpose A back
+	A->permute({1, 0});
+	
+	// the gradients are now populated into the predecessors
+}
+

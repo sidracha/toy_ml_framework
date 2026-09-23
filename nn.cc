@@ -1,14 +1,25 @@
 #include "nn.h"
+#include "tensor.h"
 
-Tensor* ReLU(Tensor* a) {
-	if (a->value <= 0) return (*a * 0.0);
-	else return *a * 1.0;
-}
-
-std::vector<Tensor*>* ReLU(std::vector<Tensor*>* a) {
-	std::vector<Tensor*>* ret = new std::vector<Tensor*>(a->size());
-	for (int i=0; i<a->size(); i++) {
-		(*ret)[i] = ReLU((*a)[i]);
+// ReLU is an operation and should return a Tensor, we also have to calculate the backward pass..
+// for now its automatic
+Tensor ReLU(Tensor t) {
+	
+	// create another tensor with the graph of the current tensor
+	// we have to make sure the shape and the stride are the same... but when we create it with the shape,
+	// it might be discontinuous...
+	// do we create the gradient...?
+	
+	// i guess we can set the stride the same i guess...
+	// create a tensor with the same shape and stride...
+	
+	Tensor new_tensor = create_tensor_clone_scalar(t, t.graph, 0.0);
+	// now its a clone, do the ReLU
+	for (int i=0; i<t.tensor_node->data.size(); i++) {
+		int val;
+		if (t.tensor_node->data[i] > 0.0) new_tensor.tensor_node->data[0] = 1.0; 
 	}
-	return ret;
+
+	return t * new_tensor;
+
 }
