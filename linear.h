@@ -5,7 +5,7 @@
 #include <stdexcept>
 
 #include "tensor.h"
-#include "model.h"
+#include "layer.h"
 
 
 
@@ -34,10 +34,8 @@ public:
 	
 	// tensor T is not owned by anything else...
 	// each layers owns its own tensors, its fine!
-	Tensor forward(Tensor t) override {
-		t = t.MATMUL_2D_ADD(weight);
-		t = t.BIAS_ADD_2D_1D(bias);
-		return t;
-	}
+	Tensor forward(Tensor t) override;	
+	void zero_grad() override;
+	void gradient_descent_step(double lr) override;
 
 };

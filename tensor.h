@@ -94,6 +94,8 @@ public:
 	TensorNode* make_node(std::vector<double> data, std::vector<int> shape, Op op);
 	TensorNode* make_node(std::vector<double> data, std::vector<int> shape, std::vector<int> stride);	
 
+	void clear() {nodes.clear();}
+
 };
 
 
