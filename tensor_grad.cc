@@ -190,3 +190,28 @@ void MATMUL_2D_backward(TensorNode* node) {
 	// the gradients are now populated into the predecessors
 }
 
+void BIAS_ADD_2D_1D_backward(TensorNode* node) {
+	
+	TensorNode* A = node->predecessors[0];
+	TensorNode* B = node->predecessors[1];
+	
+	// A is the input matrix of size N, M
+	int N = A->shape[0];
+	int M = A->shape[1];
+	// B.shape[0] = M
+	// basically just add all the contributions since its column wise
+	// and for a, the grad is just all 1s, so its fine we just add it 
+	for (int j=0; j<M; j++) {
+		double ddb = 0.0;
+		for (int i=0; i<N; i++) {
+			int node_index = node->linearize_index({i, j});
+			ddb += node->grad[node_index];
+			// what is the gradient for A? just add the node gradient back into it
+			A->grad[node_index] += node->grad[node_index];
+
+		}
+		// add the gradient to b
+		B->grad[j] += ddb;
+	}
+
+} 

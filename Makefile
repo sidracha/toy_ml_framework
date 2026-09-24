@@ -1,7 +1,7 @@
 CXX      := g++
 CXXFLAGS := -std=c++17 -Wall -Wextra -g -MMD -MP
 
-SRCS := main.cc tensor_grad.cc tensor.cc linear.cc nn.cc losses.cc calc.cc
+SRCS := main.cc tensor_grad.cc tensor.cc linear.cc nn.cc losses.cc calc.cc model.cc
 OBJS := $(SRCS:.cc=.o)
 DEPS := $(OBJS:.o=.d)
 

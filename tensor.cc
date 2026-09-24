@@ -195,6 +195,35 @@ Tensor Tensor::MATMUL_2D_ADD(Tensor other) {
 
 }
 
+// ok get the N and M of the current
+Tensor Tensor::BIAS_ADD_2D_1D(Tensor bias) {
+
+	int AN = shape()[0];
+	int AM = shape()[1];
+	
+	int BM = bias.shape()[0];
+	if (AM != BM) throw InvalidTensorShape();
+
+	std::vector<double> output(AN*AM, 0.0);
+
+	MAT2D_1D_ADD (
+		tensor_node->data,
+		stride(),
+		shape(),
+
+		bias.tensor_node->data,
+		bias.stride(),
+		bias.shape(),
+
+		output,
+		stride(),
+		shape()
+	);
+
+	return Tensor(make_operator_output_node(output, shape(), Op::BIAS_ADD, tensor_node, bias.tensor_node, graph), graph); 
+
+}
+
 Tensor Tensor::pow(double scalar) {
 	Tensor new_tensor = create_tensor_clone_scalar(*this, graph, scalar);
 	// create the new tensor.. now we can safely do a pointwise pow

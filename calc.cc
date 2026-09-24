@@ -43,7 +43,7 @@ void GEMM_2D_ADD (
 	int index_A, index_B, index_C;
 		
 	for (int i=0; i<CN; i++) {
-		for (int j=0; j<CM; i++) {
+		for (int j=0; j<CM; j++) {
 			
 
 			double dot_product = 0;
@@ -64,6 +64,56 @@ void GEMM_2D_ADD (
 			
 			index_C = linearize_index({i, j}, stride_C);
 			data_C[index_C] += dot_product;
+
+		}
+	}
+
+}
+
+
+// input:
+// A: input data size [N*M]
+// B: bias size [M]
+// C: buffer size [N*M]
+// it ADDS so make sure the buffer is written to 0
+void MAT2D_1D_ADD (
+	const std::vector<double>& data_A,
+	const std::vector<int>& stride_A,
+	const std::vector<int>& shape_A,
+	
+	const std::vector<double>& data_B,
+	const std::vector<int>& stride_B,
+	const std::vector<int>& shape_B,
+	
+	std::vector<double>& data_C,
+	const std::vector<int>& stride_C,
+	const std::vector<int>& shape_C
+
+) {	
+	
+	
+	if (shape_C != shape_A || stride_C != stride_A) throw std::runtime_error("Invalid shapes for buffer");
+
+	int AN = shape_A[0];
+	int AM = shape_A[1];
+	
+	int BM = shape_B[0];
+	
+	int CN = shape_C[0];
+	int CM = shape_C[1];
+	
+	if (CM != BM) throw std::runtime_error("Bias size mismatch");
+
+	// iterate over the output postitions
+	for (int i=0; i<CN; i++) {
+		for (int j=0; j<CM; j++) {
+			// then we want to for each one just add the bias of j its no big deal
+			int index_A = linearize_index({i, j}, stride_A);
+			int index_B = linearize_index({j}, stride_B);
+			int index_C = linearize_index({i, j}, stride_C);
+			
+			//write the data into C
+			data_C[index_C] += data_A[index_A] + data_B[index_B];
 
 		}
 	}

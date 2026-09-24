@@ -18,6 +18,7 @@ enum class Op {
 	POW,
 	EXP,
 	MATMUL,
+	BIAS_ADD,
 	OTHER
 };
 
@@ -37,7 +38,7 @@ public:
 	std::function<void(TensorNode*)> backward_fn;
 	
 	TensorNode(std::vector<double> _data, std::vector<int> _shape) : data(std::move(_data)), grad(data.size(), 0.0), shape(_shape), stride(_shape.size(), 1) {
-		for (int i=shape.size()-1; i>=0; i--) stride[i] = shape[i+1] * shape[i];	
+		for (int i=shape.size()-2; i>=0; i--) stride[i] = shape[i+1] * stride[i+1];	
 	}
 
 	TensorNode(std::vector<double> _data, std::vector<int> _shape, std::vector<int> _stride) :
@@ -46,8 +47,8 @@ public:
 		shape(_shape),
 		stride(_stride) {}
 	
-	TensorNode(std::vector<double> _data, std::vector<int> _shape, Op _op) {
-		TensorNode(_data, _shape);
+	TensorNode(std::vector<double> _data, std::vector<int> _shape, Op _op)
+		: TensorNode(std::move(_data), std::move(_shape)) {
 		op = _op;
 	}
 	
@@ -141,6 +142,7 @@ public:
 	Tensor operator/(Tensor other);
 	
 	Tensor MATMUL_2D_ADD(Tensor other);
+	Tensor BIAS_ADD_2D_1D(Tensor bias);
 	
 	// return cur ^ scalar
 	// creates automatically a tensor node for this scalar value since we are
@@ -153,7 +155,7 @@ public:
 	void backward();
 
 	std::vector<int> shape() {return tensor_node->shape;}
-	std::vector<int> stride() {return tensor_node->shape;}
+	std::vector<int> stride() {return tensor_node->stride;}
 	int dim() {return tensor_node->dim();}
 	
 

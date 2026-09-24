@@ -5,10 +5,11 @@
 #include <stdexcept>
 
 #include "tensor.h"
+#include "model.h"
 
 
 
-class Linear {
+class Linear : public Layer {
 public:
 
 	int N;
@@ -29,6 +30,14 @@ public:
 
 		if (N <= 0 || M <= 0) throw std::runtime_error("Invalid linear layer shape");
 	
+	}
+	
+	// tensor T is not owned by anything else...
+	// each layers owns its own tensors, its fine!
+	Tensor forward(Tensor t) override {
+		t = t.MATMUL_2D_ADD(weight);
+		t = t.BIAS_ADD_2D_1D(bias);
+		return t;
 	}
 
 };
