@@ -46,23 +46,6 @@
 #include "linear.h"
 #include "calc.h"
 
-class Optimizer {
-public:
-	std::vector<Linear>& layers;
-
-	Optimizer(std::vector<Linear>& _layers) : layers(_layers) {};
-	
-	void zero_grad() {
-		// set everything in the graph to 0.
-		// do we traverse the graph, and then set everything to 0...
-		// but all the intemediate ones should also be 0 so its fine...
-		for (Linear& layer : layers) {
-		
-
-		}
-	}
-
-};
 
 // THE BACKWARD PASS FOR EACH OPERATOR ON THE TENSOR
 // ASSUMES THAT GRAD FOR THE TENSOR IS CURRENTLY ALREADY CALCULATED
