@@ -6,6 +6,7 @@
 
 #include "tensor.h"
 #include "layer.h"
+#include "nn.h"
 
 class Linear : public Layer {
 public:
@@ -42,5 +43,12 @@ public:
 class LinearReLU : public Linear {
 public:
 	LinearReLU (int _N, int _M) : Linear(_N, _M) {}	
+	Tensor forward(Tensor t) override;
+};
+
+
+class LinearSigmoid : public Linear {
+public:
+	LinearSigmoid (int _N, int _M) : Linear(_N, _M) {}	
 	Tensor forward(Tensor t) override;
 };

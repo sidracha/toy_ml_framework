@@ -47,7 +47,7 @@ void train_sine(SequentialModel& model) {
 	while (NUM_ITERATIONS--) {
 
 		Tensor input_tensor = create_tensor_random({64, 1}, &g, 0.0, 1.0);
-		Tensor output_tensor = model.forward(input_tensor);
+		Tensor output_tensor = Sigmoid(model.forward(input_tensor));
 		Tensor target_tensor = create_expect_sine(input_tensor);
 	
 		double output_sum = 0.0;

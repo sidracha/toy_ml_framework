@@ -55,3 +55,10 @@ Tensor LinearReLU::forward(Tensor t) {
 	t = ReLU(t);
 	return t;
 }
+
+Tensor LinearSigmoid::forward(Tensor t) {
+	t = t.MATMUL_2D_ADD(weight);
+	t = t.BIAS_ADD_2D_1D(bias);
+	t = Sigmoid(t);
+	return t;
+}

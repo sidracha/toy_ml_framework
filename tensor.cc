@@ -110,7 +110,7 @@ TensorNode* make_operator_output_node(
 	raw->set_predecessors({a, b});
 	raw->backward_fn = backward_fn;
 	a->indegree++;
-	b->indegree++;
+	if (b != nullptr) b->indegree++;
 	return raw;	
 }
 
@@ -277,6 +277,7 @@ void Tensor::backward() {
 		// call the backward_fn of the node here
 		node->backward_fn(node);
 		for (TensorNode* pred : node->predecessors) {
+			if (pred == nullptr) continue;
 			pred->indegree--;
 			// add to the backprop queue if the conditions are met
 			if (pred->indegree == 0 && pred->backward_fn != nullptr) q.push_back(pred); 
