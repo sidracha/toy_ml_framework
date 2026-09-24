@@ -160,11 +160,18 @@ public:
 	std::vector<int> stride() {return tensor_node->stride;}
 	int dim() {return tensor_node->dim();}
 	
-
+	void backward();
 
 };
 
-TensorNode* make_operator_output_node(std::vector<double> data, std::vector<int> shape, Op op, TensorNode* a, TensorNode* b, Graph* graph);
+TensorNode* make_operator_output_node(
+	std::vector<double> data, 
+	std::vector<int> shape, 
+	Op op, 
+	TensorNode* a, 
+	TensorNode* b, 
+	Graph* graph,
+	std::function<void(TensorNode*)> backward_fn);
 
 Tensor create_tensor_zeros(std::vector<int> shape, Graph* graph);
 

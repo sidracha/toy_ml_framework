@@ -1,4 +1,5 @@
 #include "linear.h"
+#include "nn.h"
 
 #include <vector>
 #include <stdexcept>
@@ -40,4 +41,17 @@ void Linear::gradient_descent_step(double lr) {
 		bias.tensor_node->data[i] += grad_step;
 	}
 
+}
+
+void Linear::clear_graph() {
+	weight.tensor_node->predecessors = {};
+	bias.tensor_node->predecessors = {};
+
+}
+
+Tensor LinearReLU::forward(Tensor t) {
+	t = t.MATMUL_2D_ADD(weight);
+	t = t.BIAS_ADD_2D_1D(bias);
+	t = ReLU(t);
+	return t;
 }

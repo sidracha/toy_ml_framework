@@ -1,5 +1,6 @@
 #include "tensor.h"
 #include "calc.h"
+#include "tensor_grad.h"
 
 #include <vector>
 #include <deque>
@@ -94,10 +95,22 @@ TensorNode* Graph::make_node(std::vector<double> data, std::vector<int> shape, O
 
 // creates it fromt he local graph, with the given data
 // should ALSO set the predecessors, sets {a, b} as the predecessors of this node
-TensorNode* make_operator_output_node(std::vector<double> data, std::vector<int> shape, Op op, TensorNode* a, TensorNode* b, Graph* graph) {
+TensorNode* make_operator_output_node(
+	std::vector<double> data, 
+	std::vector<int> shape, 
+	Op op, 
+	TensorNode* a, 
+	TensorNode* b, 
+	Graph* graph,
+	std::function<void(TensorNode*)> backward_fn) {
+	
+
 	if (graph == nullptr) throw std::runtime_error("Graph must be valid for all operations");
 	TensorNode* raw = graph->make_node(data, shape, op);
 	raw->set_predecessors({a, b});
+	raw->backward_fn = backward_fn;
+	a->indegree++;
+	b->indegree++;
 	return raw;	
 }
 
@@ -111,7 +124,7 @@ Tensor Tensor::operator+(Tensor other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] + other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::ADD, tensor_node, other.tensor_node, graph); 
+	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::ADD, tensor_node, other.tensor_node, graph, add_backward); 
 	return Tensor(raw, graph);
 }
 
@@ -121,7 +134,7 @@ Tensor Tensor::operator-(Tensor other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] - other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::SUB, tensor_node, other.tensor_node, graph); 
+	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::SUB, tensor_node, other.tensor_node, graph, sub_backward); 
 	return Tensor(raw, graph);
 }
 
@@ -131,7 +144,7 @@ Tensor Tensor::operator*(Tensor other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] * other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::MULT, tensor_node, other.tensor_node, graph); 
+	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::MULT, tensor_node, other.tensor_node, graph, mult_backward); 
 	return Tensor(raw, graph);
 }
 
@@ -142,7 +155,7 @@ Tensor Tensor::operator/(Tensor other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] / other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::DIV, tensor_node, other.tensor_node, graph); 
+	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::DIV, tensor_node, other.tensor_node, graph, div_backward); 
 	return Tensor(raw, graph);
 
 }
@@ -191,7 +204,7 @@ Tensor Tensor::MATMUL_2D_ADD(Tensor other) {
 		output_shape
 	);
 	
-	return Tensor(make_operator_output_node(output, output_shape, Op::MATMUL, tensor_node, other.tensor_node, graph), graph);
+	return Tensor(make_operator_output_node(output, output_shape, Op::MATMUL, tensor_node, other.tensor_node, graph, MATMUL_2D_backward), graph);
 
 }
 
@@ -220,10 +233,11 @@ Tensor Tensor::BIAS_ADD_2D_1D(Tensor bias) {
 		shape()
 	);
 
-	return Tensor(make_operator_output_node(output, shape(), Op::BIAS_ADD, tensor_node, bias.tensor_node, graph), graph); 
+	return Tensor(make_operator_output_node(output, shape(), Op::BIAS_ADD, tensor_node, bias.tensor_node, graph, BIAS_ADD_2D_1D_backward), graph); 
 
 }
 
+/*
 Tensor Tensor::pow(double scalar) {
 	Tensor new_tensor = create_tensor_clone_scalar(*this, graph, scalar);
 	// create the new tensor.. now we can safely do a pointwise pow
@@ -236,5 +250,38 @@ Tensor Tensor::pow(double scalar) {
 	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::POW, tensor_node, new_tensor.tensor_node, graph);
 	return Tensor(raw, graph);
 }
+*/
 
 
+void Tensor::backward() {
+	
+	// set the current gradient of the node to 1
+	for (int i=0; i<tensor_node->grad.size(); i++) {
+		tensor_node->grad[i] = 1.0;
+	}
+	
+	// make the queue here
+	deque<TensorNode*> q;
+
+	while (q.size() > 0) {
+		
+		// get the predecessors, then decrement their indegree
+		// if their indegree is 0 and a backward fn is attached, we can add to the queue
+		// well everything should be a binary operator
+		// oh we can iterate over the parents too, right?
+		// call backward on this node, then add the next nodes into the queue one by one
+		
+		TensorNode* node = q.front();
+		q.pop_front();
+		
+		// call the backward_fn of the node here
+		node.backward_fn();
+		for (TensorNode* pred : node->predecessors) {
+			pred->indegree--;
+			// add to the backprop queue if the conditions are met
+			if (pred->indegree == 0 && pred->backward_fn != nullptr) q.push_back(pred); 
+		}
+
+	}
+
+}

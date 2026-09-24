@@ -1,4 +1,5 @@
 #include "tensor.h"
+#include "losses.h"
 
 #include <cmath>
 #include <stdexcept>
@@ -34,7 +35,7 @@ Tensor MSELoss(Tensor a, Tensor b) {
 	
 	//we have to make the node, I guess? 
 	// put it in tensor As graph. should be like (pred, target)
-	TensorNode* raw = make_operator_output_node(output, {1}, Op::OTHER, a.tensor_node, b.tensor_node, a.graph);
+	TensorNode* raw = make_operator_output_node(output, {1}, Op::OTHER, a.tensor_node, b.tensor_node, a.graph, MSELoss_backward);
 	return Tensor(raw, a.graph);
 
 }

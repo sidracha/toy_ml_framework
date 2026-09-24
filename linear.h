@@ -7,8 +7,6 @@
 #include "tensor.h"
 #include "layer.h"
 
-
-
 class Linear : public Layer {
 public:
 
@@ -37,5 +35,11 @@ public:
 	Tensor forward(Tensor t) override;	
 	void zero_grad() override;
 	void gradient_descent_step(double lr) override;
+	void clear_graph() override;
 
 };
+
+class LinearReLU : public Linear {
+public:
+	Tensor forward(Tensor t) override;
+}

@@ -6,10 +6,10 @@
 class Optimizer {
 public:
 	double lr;
-	std::vector<Layer>* layers;
+	std::vector<std::unique_ptr<Layer>>& layers;
 
-	Optimizer(double _lr) : lr(_lr) {}
+	Optimizer(std::vector<std::unique_ptr<Layer>>& _layers, double _lr) : lr(_lr), layers(_layers) {}
 	void zero_grad();
 	void step();
-}
+};
 

@@ -1,5 +1,6 @@
 #include "tensor.h"
 #include "layer.h"
+#include "optimizer.h"
 
 // we do SIMPLE gradient descent
 // nothing fanciful
@@ -14,9 +15,7 @@
 void Optimizer::zero_grad() {
 	// go through every single tensor in layers.. and set it to 0
 	// but also each layer should have the interface to set to 0
-	for (int i=0; i<(*layers).size(); i++) {
-		(*layers)[i].zero_grad();
-	}
+	for (const auto& layer : layers) layer->zero_grad();
 }
 
 
@@ -24,8 +23,5 @@ void Optimizer::zero_grad() {
 // very naive
 void Optimizer::step() {
 	
-	for (int i=0; i<(*layers).size(); i++) {
-		(*layers)[i].gradient_descent_step(lr);
-	}
-
+	for (const auto& layer : layers) layer->gradient_descent_step(lr);
 } 

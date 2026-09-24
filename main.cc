@@ -2,16 +2,17 @@
 
 #include "tensor.h"
 #include "linear.h"
+#include "layer.h"
+#include "train_loop.h"
 
 int main () {
 	
-	Graph g;
-
-	Tensor input_tensor = create_tensor_zeros({10, 10}, &g);
+	SequentialModel model;
+	model.register_layer<LinearReLU>(1, 30);
+	model.register_layer<LinearReLU>(30, 100);
+	model.register_layer<LinearReLU>(100, 30);
+	model.register_layer<LinearReLU>(30, 1);
 	
-	Linear linear1(10, 10);
-
-	linear1.forward(input_tensor);
-
-	return 0;
+	train_sine(model);	
+	
 }
