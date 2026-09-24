@@ -62,7 +62,7 @@ void MSELoss_backward(TensorNode* node) {
 			int a_index = a->linearize_index({i, j});
 			int b_index = b->linearize_index({i, j});
 			
-			double first_term = 2 / M*N;
+			double first_term = 2 / (static_cast<double>(M)*static_cast<double>(N));
 			double second_term = (a->data[a_index] - b->data[b_index]);
 		
 			double dda = node->grad[0] * first_term * second_term;

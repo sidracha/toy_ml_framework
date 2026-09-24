@@ -17,9 +17,13 @@ Tensor ReLU(Tensor t) {
 	// now its a clone, do the ReLU
 	for (int i=0; i<t.tensor_node->data.size(); i++) {
 		int val;
-		if (t.tensor_node->data[i] > 0.0) new_tensor.tensor_node->data[0] = 1.0; 
+		if (t.tensor_node->data[i] > 0.0) new_tensor.tensor_node->data[i] = 1.0; 
 	}
 
 	return t * new_tensor;
+
+}
+
+Tensor sigmoid(Tensor t) {
 
 }

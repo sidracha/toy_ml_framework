@@ -24,8 +24,8 @@ void TensorNode::increase_indegree() {
 
 
 void TensorNode::permute(const std::vector<int>& index_after) {
-	std::vector<int> shape_after;
-	std::vector<int> stride_after;
+	std::vector<int> shape_after(dim());
+	std::vector<int> stride_after(dim());
 	for (int i=0; i<index_after.size(); i++) {
 		shape_after[index_after[i]] = shape[i];
 		stride_after[index_after[i]] = stride[i];
@@ -170,8 +170,8 @@ Tensor Tensor::MATMUL_2D_ADD(Tensor other) {
 	int INPUT_M = tensor_node->shape[1];
 	int OTHER_N = other.tensor_node->shape[0];
 	int OTHER_M = other.tensor_node->shape[1];
-	int OUTPUT_N = INPUT_M;
-	int OUTPUT_M = OTHER_N;
+	int OUTPUT_N = INPUT_N;
+	int OUTPUT_M = OTHER_M;
 
 	// now check that the shape is correct for matmul
 	if (INPUT_M != OTHER_N) throw InvalidTensorShape();
@@ -261,8 +261,8 @@ void Tensor::backward() {
 	}
 	
 	// make the queue here
-	deque<TensorNode*> q;
-
+	std::deque<TensorNode*> q;
+	q.push_back(tensor_node);
 	while (q.size() > 0) {
 		
 		// get the predecessors, then decrement their indegree
@@ -275,7 +275,7 @@ void Tensor::backward() {
 		q.pop_front();
 		
 		// call the backward_fn of the node here
-		node.backward_fn();
+		node->backward_fn(node);
 		for (TensorNode* pred : node->predecessors) {
 			pred->indegree--;
 			// add to the backprop queue if the conditions are met

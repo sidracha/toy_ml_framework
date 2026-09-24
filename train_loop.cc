@@ -21,7 +21,8 @@ Tensor create_expect_sine(Tensor t) {
 
 // since rows are the batch this will be of [BATCH_SIZE, 1]
 Tensor create_validation_set(int batch_size, Graph* graph) {	
-	Tensor t = create_tensor_random({batch_size, 1}, graph, -4.0, 4.0);
+	Tensor t = create_tensor_random({batch_size, 1}, graph, 0.0, 1.0);
+	return t;
 }
 
 //lets train a simple predictor of sine and lets batch it
@@ -33,28 +34,33 @@ void train_sine(SequentialModel& model) {
 	// and these will be our input target
 	
 	Graph validation_graph;
-	Tensor validation_tensor = create_validation_set(16, validation_graph);
+	//Tensor validation_tensor = create_validation_set(16, validation_graph);
 
 	Graph g;
-	double learning_rate = 0.001;
-	Optimizer optim(learning_rate, model.layers);
+	double learning_rate = 0.05;
+	Optimizer optim(model.layers, learning_rate);
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
 	
-	int NUM_ITERATIONS = 100;
+	int NUM_ITERATIONS = 100000;
 
 	while (NUM_ITERATIONS--) {
 
-		Tensor input_tensor = create_tensor_random({16, g, -4.0, 4.0});
+		Tensor input_tensor = create_tensor_random({64, 1}, &g, 0.0, 1.0);
 		Tensor output_tensor = model.forward(input_tensor);
 		Tensor target_tensor = create_expect_sine(input_tensor);
-
+	
+		double output_sum = 0.0;
+		for (int i=0; i<output_tensor.tensor_node->data.size(); i++) {
+			output_sum += output_tensor.tensor_node->data[i];
+		}
 
 		Tensor loss = MSELoss(output_tensor, target_tensor);
-		std::cout << loss.tensor_node->data[0] << std::endl;
+		std::cout << loss.tensor_node->data[0] << " " << output_sum / static_cast<double>(64) << std::endl;
 		
-		optimizer.zero_grad();
+		optim.zero_grad();
 		loss.backward();
+		optim.step();
 		
 		model.clear_graph();
 		g.clear();

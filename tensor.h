@@ -160,8 +160,6 @@ public:
 	std::vector<int> stride() {return tensor_node->stride;}
 	int dim() {return tensor_node->dim();}
 	
-	void backward();
-
 };
 
 TensorNode* make_operator_output_node(

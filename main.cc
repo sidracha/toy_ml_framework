@@ -10,8 +10,8 @@ int main () {
 	SequentialModel model;
 	model.register_layer<LinearReLU>(1, 30);
 	model.register_layer<LinearReLU>(30, 100);
-	model.register_layer<LinearReLU>(100, 30);
-	model.register_layer<LinearReLU>(30, 1);
+	model.register_layer<LinearReLU>(100, 300);
+	model.register_layer<Linear>(300, 1);
 	
 	train_sine(model);	
 	

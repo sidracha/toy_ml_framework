@@ -10,6 +10,8 @@
 class Linear : public Layer {
 public:
 
+	double DIST_MIN = 0.0;
+	double DIST_MAX = 1.0;
 	int N;
 	int M;
 	Graph graph;
@@ -17,8 +19,6 @@ public:
 	Tensor bias;
 
 
-	double DIST_MIN = 0.0;
-	double DIST_MAX = 1.0;
 	Linear(int _N, int _M)
 		: N(_N),
 		M(_M),
@@ -41,5 +41,6 @@ public:
 
 class LinearReLU : public Linear {
 public:
+	LinearReLU (int _N, int _M) : Linear(_N, _M) {}	
 	Tensor forward(Tensor t) override;
-}
+};
