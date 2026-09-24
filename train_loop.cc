@@ -21,7 +21,7 @@ Tensor create_expect_sine(Tensor t) {
 
 // since rows are the batch this will be of [BATCH_SIZE, 1]
 Tensor create_validation_set(int batch_size, Graph* graph) {	
-	Tensor t = create_tensor_random({batch_size, 1}, graph, 0.0, 1.0);
+	Tensor t = create_tensor_random({batch_size, 1}, graph, -3.14, 3.14);
 	return t;
 }
 
@@ -37,17 +37,17 @@ void train_sine(SequentialModel& model) {
 	//Tensor validation_tensor = create_validation_set(16, validation_graph);
 
 	Graph g;
-	double learning_rate = 0.05;
+	double learning_rate = 0.1;
 	Optimizer optim(model.layers, learning_rate);
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
 	
-	int NUM_ITERATIONS = 100000;
+	int NUM_ITERATIONS = 1000;
 
 	while (NUM_ITERATIONS--) {
 
-		Tensor input_tensor = create_tensor_random({64, 1}, &g, 0.0, 1.0);
-		Tensor output_tensor = Sigmoid(model.forward(input_tensor));
+		Tensor input_tensor = create_tensor_random({64, 1}, &g, -3.14, 3.14);
+		Tensor output_tensor = model.forward(input_tensor);
 		Tensor target_tensor = create_expect_sine(input_tensor);
 	
 		double output_sum = 0.0;

@@ -145,8 +145,8 @@ void div_backward(TensorNode* node) {
 }
 
 // lets say C = AB for this
-// ddA = B * (ddC)^T
-// ddB = A^T * (ddC)
+// ddA = dC * B^T
+// ddB = A^T * dC
 
 void MATMUL_2D_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
@@ -154,22 +154,22 @@ void MATMUL_2D_backward(TensorNode* node) {
 	TensorNode* A = node->predecessors[0];
 	TensorNode* B = node->predecessors[1];
 	
-	// ddA, first transpose ddC, current node grad is ddC
-	node->permute({1, 0});
+	// ddA, first transpose B, current node grad is ddC
+	B->permute({1, 0});
 	GEMM_2D_ADD (
-		B->data,
-		B->stride,
-		B->shape,
 		node->grad,
 		node->stride,
 		node->shape,
+		B->data,
+		B->stride,
+		B->shape,
 		A->grad,
 		A->stride,
 		A->shape
 	);
 
-	// ddC transpose back 
-	node->permute({1, 0});
+	// B transpose back 
+	B->permute({1, 0});
 	
 	// transpose A	
 	A->permute({1, 0});
