@@ -14,6 +14,8 @@ Parts that work:
 - simple FFN trains
 
 TODO (in order of priority):
+- change make_operator_output_node function take a list of predecessors
+- Think about doing graph.make_tensor rather than having standalone functions
 - have Tensor be param by reference, dont copy tensor objects everywhere
 - add 3D batched tensors
 - add Model class custom forward methods
