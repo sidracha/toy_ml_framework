@@ -43,12 +43,6 @@ void Linear::gradient_descent_step(double lr) {
 
 }
 
-void Linear::clear_graph() {
-	weight.tensor_node->predecessors = {};
-	bias.tensor_node->predecessors = {};
-
-}
-
 Tensor LinearReLU::forward(Tensor t) {
 	t = t.MATMUL_2D_ADD(weight);
 	t = t.BIAS_ADD_2D_1D(bias);

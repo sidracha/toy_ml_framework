@@ -8,15 +8,14 @@ Parts that work:
 - Sigmoid
 - ReLU
 - backward functions for all this
-- autograd/autodiff w/automatic deletion of intermediate nodes w/ graph.clear()
+- autograd/autodiff w/automatic deletion of intermediate nodes
 - Linear layer
 - simple Tensor permutations/arbitrary shapes/sizes for tensor
 - simple FFN trains
 
 TODO (in order of priority):
-- change make_operator_output_node function take a list of predecessors
-- Think about doing graph.make_tensor rather than having standalone functions
-- have Tensor be param by reference, dont copy tensor objects everywhere
+- (DONE) change make_operator_output_node function take a list of predecessors
+- (DONE) have Tensor be param by reference, dont copy tensor objects everywhere
 - add 3D batched tensors
 - add Model class custom forward methods
 - Xavier initialization

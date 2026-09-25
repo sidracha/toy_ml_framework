@@ -6,7 +6,6 @@
 // for now its automatic
 Tensor ReLU(Tensor t) {
 	
-	// create another tensor with the graph of the current tensor
 	// we have to make sure the shape and the stride are the same... but when we create it with the shape,
 	// it might be discontinuous...
 	// do we create the gradient...?
@@ -14,7 +13,7 @@ Tensor ReLU(Tensor t) {
 	// i guess we can set the stride the same i guess...
 	// create a tensor with the same shape and stride...
 	
-	Tensor new_tensor = create_tensor_clone_scalar(t, t.graph, 0.0);
+	Tensor new_tensor = create_tensor_clone_scalar(t, 0.0);
 	// now its a clone, do the ReLU
 	for (int i=0; i<t.tensor_node->data.size(); i++) {
 		int val;
@@ -40,15 +39,13 @@ Tensor Sigmoid (Tensor t) {
 		data[i] = sigmoid(x);
 	}
 	// create the output node
-	TensorNode* raw = make_operator_output_node(data, 
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+										data, 
 										t.shape(), 
-										Op::OTHER, 
-										t.tensor_node, 
-										nullptr, 
-										t.graph, 
+										{t.tensor_node}, 
 										Sigmoid_backward);
 	
-	return Tensor(raw, t.graph);
+	return Tensor(node);
 	
 }
 
@@ -59,7 +56,7 @@ void Sigmoid_backward(TensorNode* node) {
 	// but what? how do we register this as an operation...
 	// just call sigmoid squared... that is the gradient... 
 	// get the first parent
-	TensorNode* a = node->predecessors[0];
+	TensorNode* a = node->predecessors[0].get();
 	for (int i=0; i<a->data.size(); i++) {
 		a->grad[i] += (node->data[i] * (1.0-node->data[i]) * node->grad[i]);
 	}

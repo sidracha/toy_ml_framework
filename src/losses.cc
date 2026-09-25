@@ -4,8 +4,6 @@
 #include <cmath>
 #include <stdexcept>
 
-// we want to create the loss output node into the graph of the current, not into the graph of the target,
-// which is onwed by something else
 
 // eh fuck it only support 2D or 1D MSELoss right now
 Tensor MSELoss(Tensor a, Tensor b) {
@@ -33,11 +31,14 @@ Tensor MSELoss(Tensor a, Tensor b) {
 		output[0] += row_sum / static_cast<double>(N);
 	} 
 	
-	//we have to make the node, I guess? 
-	// put it in tensor As graph. should be like (pred, target)
-	TensorNode* raw = make_operator_output_node(output, {1}, Op::OTHER, a.tensor_node, b.tensor_node, a.graph, MSELoss_backward);
-	return Tensor(raw, a.graph);
-
+	//we have to make the node, I guess?
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+			output, 
+			{1}, 
+			{a.tensor_node, b.tensor_node}, 
+			MSELoss_backward);
+	
+	return Tensor(node);
 }
 
 
@@ -48,9 +49,9 @@ Tensor MSELoss(Tensor a, Tensor b) {
 // dda = (2/mn) * (a-b)
 // ddb = -(2/mn) * (a-b)
 void MSELoss_backward(TensorNode* node) {
-	
-	TensorNode* a = node->predecessors[0];
-	TensorNode* b = node->predecessors[1];
+
+	TensorNode* a = node->predecessors[0].get();
+	TensorNode* b = node->predecessors[1].get();
 	
 	// just write the values in, tihs is pretty easy
 	int N = a->shape[0];

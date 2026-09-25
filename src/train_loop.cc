@@ -10,7 +10,7 @@
 Tensor create_expect_sine(Tensor t) {
 	
 	// create a new tensor of the same size
-	Tensor target = create_tensor_clone_scalar(t, t.graph, 0.0);
+	Tensor target = create_tensor_clone_scalar(t, 0.0);
 	// for each one of tensor do sine
 	for (int i=0; i<t.tensor_node->data.size(); i++) {
 		target.tensor_node->data[i] = std::sin(t.tensor_node->data[i]);
@@ -20,8 +20,8 @@ Tensor create_expect_sine(Tensor t) {
 }
 
 // since rows are the batch this will be of [BATCH_SIZE, 1]
-Tensor create_validation_set(int batch_size, Graph* graph) {	
-	Tensor t = create_tensor_random({batch_size, 1}, graph, -3.14, 3.14);
+Tensor create_validation_set(int batch_size) {	
+	Tensor t = create_tensor_random({batch_size, 1}, -3.14, 3.14);
 	return t;
 }
 
@@ -29,24 +29,20 @@ Tensor create_validation_set(int batch_size, Graph* graph) {
 void train_sine(SequentialModel& model) {
 	
 	// weve already created the model and it has a forward method
-	// first register a graph to spawn the tensor off of...
 	// we can just first create random tensors its fine... they will be our batch sine....
 	// and these will be our input target
 	
-	Graph validation_graph;
-	//Tensor validation_tensor = create_validation_set(16, validation_graph);
 
-	Graph g;
 	double learning_rate = 0.1;
 	Optimizer optim(model.layers, learning_rate);
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
 	
-	int NUM_ITERATIONS = 1000;
+	int NUM_ITERATIONS = 2500;
 
 	while (NUM_ITERATIONS--) {
 
-		Tensor input_tensor = create_tensor_random({64, 1}, &g, -3.14, 3.14);
+		Tensor input_tensor = create_tensor_random({64, 1}, -3.14, 3.14);
 		Tensor output_tensor = model.forward(input_tensor);
 		Tensor target_tensor = create_expect_sine(input_tensor);
 	
@@ -61,10 +57,6 @@ void train_sine(SequentialModel& model) {
 		optim.zero_grad();
 		loss.backward();
 		optim.step();
-		
-		model.clear_graph();
-		g.clear();
-
 	}
 
 }

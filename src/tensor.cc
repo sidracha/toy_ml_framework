@@ -34,84 +34,68 @@ void TensorNode::permute(const std::vector<int>& index_after) {
 	shape = shape_after;
 }
 
-// creates and returns a tensor. initializes is with 0
-Tensor create_tensor_zeros(std::vector<int> shape, Graph* graph) {
-	int N = 1;
-	for (int i=0; i<shape.size(); i++) N *= shape[i];
-	std::vector<double> data(N, 0.0);
-	TensorNode* raw = graph->make_node(data, shape);
 
-	return Tensor(raw, graph);
+std::shared_ptr<TensorNode> create_tensor_node(std::vector<double>& data, const std::vector<int>& shape) {
+	
+	std::shared_ptr<TensorNode> node = std::make_shared<TensorNode>(data, shape);
+	return node;
 }
 
-Tensor create_tensor_random(std::vector<int> shape, Graph* graph, double DIST_MIN, double DIST_MAX) {
+std::shared_ptr<TensorNode> create_tensor_node(std::vector<double>& data, const std::vector<int>& shape, const std::vector<int>& stride) {
+	
+	std::shared_ptr<TensorNode> node = std::make_shared<TensorNode>(data, shape, stride);
+	return node;
+}
+
+Tensor create_tensor_scalar(const std::vector<int>& shape, double scalar) {
+	int N = 1;
+	for (int i=0; i<shape.size(); i++) N *= shape[i];
+	std::vector<double> data(N, scalar);
+	std::shared_ptr<TensorNode> node = create_tensor_node(data, shape);
+	return Tensor(node);
+}
+
+// creates and returns a tensor. initializes is with 0
+Tensor create_tensor_zeros(const std::vector<int>& shape) {
+	return create_tensor_scalar(shape, 0.0);	
+}
+
+Tensor create_tensor_random(const std::vector<int>& shape, double DIST_MIN, double DIST_MAX) {
 	std::random_device rd;
 	std::mt19937 gen(rd());
 	std::uniform_real_distribution<double> dist(DIST_MIN, DIST_MAX);
 
-	Tensor x = create_tensor_zeros(shape, graph);
+	Tensor x = create_tensor_zeros(shape);
 	for (int i=0; i<x.tensor_node->data.size(); i++) {
 		x.tensor_node->data[i] = dist(gen);
 	}
 	return x;
 }
 
-Tensor create_tensor_scalar(std::vector<int> shape, Graph* graph, double scalar) {
-	Tensor x = create_tensor_zeros(shape, graph);
-	for (int i=0; i<x.tensor_node->data.size(); i++) x.tensor_node->data[i] = scalar;
-	return x;
-} 
 
-Tensor create_tensor_clone_scalar(Tensor t, Graph* graph, double scalar) {
+Tensor create_tensor_clone_scalar(const Tensor& t, double scalar) {
+	
 	int N = 1;
-	std::vector<int> shape = t.tensor_node->shape;
-	std::vector<int> stride = t.tensor_node->stride;
-	for (int i=0; i<shape.size(); i++) N *= shape[i];
-	std::vector<double> data(N, 0.0);
-	TensorNode* raw = graph->make_node(data, shape, stride);
-	return Tensor(raw, graph);
-}
-
-TensorNode* Graph::make_node(std::vector<double> data, std::vector<int> shape) {
-	auto node = std::make_unique<TensorNode>(std::move(data), shape);
-	TensorNode* raw = node.get();
-	nodes.push_back(std::move(node));
-	return raw;
-}
-
-TensorNode* Graph::make_node(std::vector<double> data, std::vector<int> shape, std::vector<int> stride) {
-	auto node = std::make_unique<TensorNode>(std::move(data), shape);
-	TensorNode* raw = node.get();
-	nodes.push_back(std::move(node));
-	return raw;
-}
-
-TensorNode* Graph::make_node(std::vector<double> data, std::vector<int> shape, Op op) {
-	auto node = std::make_unique<TensorNode>(std::move(data), shape, op);
-	TensorNode* raw = node.get();
-	nodes.push_back(std::move(node));
-	return raw;
+	for (int i=0; i<t.shape().size(); i++) N *= t.shape()[i];
+	std::vector<double> data(N, scalar);
+	std::shared_ptr<TensorNode> tensor_node = std::make_shared<TensorNode>(data, t.shape(), t.stride());
+	return tensor_node;
 }
 
 // creates it fromt he local graph, with the given data
-// should ALSO set the predecessors, sets {a, b} as the predecessors of this node
-TensorNode* make_operator_output_node(
-	std::vector<double> data, 
-	std::vector<int> shape, 
-	Op op, 
-	TensorNode* a, 
-	TensorNode* b, 
-	Graph* graph,
+// should ALSO set the predecessors, sets {a, b, ...} as the predecessors of this node
+
+std::shared_ptr<TensorNode> make_operator_output_node (
+	std::vector<double>& data,
+	const std::vector<int>& shape,
+	const std::vector<std::shared_ptr<TensorNode>>& predecessors,
 	std::function<void(TensorNode*)> backward_fn) {
 	
-
-	if (graph == nullptr) throw std::runtime_error("Graph must be valid for all operations");
-	TensorNode* raw = graph->make_node(data, shape, op);
-	raw->set_predecessors({a, b});
-	raw->backward_fn = backward_fn;
-	a->indegree++;
-	if (b != nullptr) b->indegree++;
-	return raw;	
+	std::shared_ptr<TensorNode> node = create_tensor_node(data, shape);
+	for (const auto& predecessor : predecessors) predecessor->indegree++;
+	node->predecessors = predecessors;
+	node->backward_fn = backward_fn;
+	return node;
 }
 
 
@@ -120,49 +104,52 @@ int Tensor::linearize_index(const std::vector<int>& index) {
 }
 
 // ADD 
-Tensor Tensor::operator+(Tensor other) {
+Tensor Tensor::operator+(const Tensor& other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] + other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::ADD, tensor_node, other.tensor_node, graph, add_backward); 
-	return Tensor(raw, graph);
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node, other.tensor_node}, add_backward);
+	return Tensor(node);
 }
 
 
-// SUBTRACT 
-Tensor Tensor::operator-(Tensor other) {
+// SUBTRACT
+Tensor Tensor::operator-(const Tensor& other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] - other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::SUB, tensor_node, other.tensor_node, graph, sub_backward); 
-	return Tensor(raw, graph);
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node, other.tensor_node}, sub_backward);
+	return Tensor(node);
 }
 
 
 // MULTIPLY
-Tensor Tensor::operator*(Tensor other) {
+Tensor Tensor::operator*(const Tensor& other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] * other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::MULT, tensor_node, other.tensor_node, graph, mult_backward); 
-	return Tensor(raw, graph);
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node, other.tensor_node}, mult_backward);
+	return Tensor(node);
 }
 
 
 
-// DIVIDE 
-Tensor Tensor::operator/(Tensor other) {
+// DIVIDE
+Tensor Tensor::operator/(const Tensor& other) {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] / other.tensor_node->data[i];
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::DIV, tensor_node, other.tensor_node, graph, div_backward); 
-	return Tensor(raw, graph);
-
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node, other.tensor_node}, div_backward);
+	return Tensor(node);
 }
 
 
 // MATMUL 2D
-Tensor Tensor::MATMUL_2D_ADD(Tensor other) {
+Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) {
 	// we have to verify the shapes are the same, and that they are both only 2d
 	if (other.tensor_node->dim() != 2 || tensor_node->dim() != 2) throw InvalidTensorShape();
 	
@@ -204,12 +191,14 @@ Tensor Tensor::MATMUL_2D_ADD(Tensor other) {
 		output_shape
 	);
 	
-	return Tensor(make_operator_output_node(output, output_shape, Op::MATMUL, tensor_node, other.tensor_node, graph, MATMUL_2D_backward), graph);
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, output_shape, {tensor_node, other.tensor_node}, MATMUL_2D_backward);
+	return Tensor(node);
 
 }
 
 // ok get the N and M of the current
-Tensor Tensor::BIAS_ADD_2D_1D(Tensor bias) {
+Tensor Tensor::BIAS_ADD_2D_1D(const Tensor& bias) {
 
 	int AN = shape()[0];
 	int AM = shape()[1];
@@ -233,7 +222,9 @@ Tensor Tensor::BIAS_ADD_2D_1D(Tensor bias) {
 		shape()
 	);
 
-	return Tensor(make_operator_output_node(output, shape(), Op::BIAS_ADD, tensor_node, bias.tensor_node, graph, BIAS_ADD_2D_1D_backward), graph); 
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node, bias.tensor_node}, BIAS_ADD_2D_1D_backward);
+	return Tensor(node); 
 
 }
 
@@ -261,7 +252,7 @@ void Tensor::backward() {
 	}
 	
 	// make the queue here
-	std::deque<TensorNode*> q;
+	std::deque<std::shared_ptr<TensorNode>> q;
 	q.push_back(tensor_node);
 	while (q.size() > 0) {
 		
@@ -271,17 +262,20 @@ void Tensor::backward() {
 		// oh we can iterate over the parents too, right?
 		// call backward on this node, then add the next nodes into the queue one by one
 		
-		TensorNode* node = q.front();
+		std::shared_ptr<TensorNode> node = q.front();
 		q.pop_front();
 		
 		// call the backward_fn of the node here
-		node->backward_fn(node);
-		for (TensorNode* pred : node->predecessors) {
+		node->backward_fn(node.get());
+		for (const auto& pred : node->predecessors) {
 			if (pred == nullptr) continue;
 			pred->indegree--;
 			// add to the backprop queue if the conditions are met
 			if (pred->indegree == 0 && pred->backward_fn != nullptr) q.push_back(pred); 
 		}
+		// we have already pushed into the deque, which has a reference to it.
+		// now we can do clear
+		node->predecessors.clear();
 
 	}
 

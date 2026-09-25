@@ -13,9 +13,9 @@ public:
 	virtual Tensor forward(Tensor t) = 0;
 	virtual void zero_grad() = 0;
 	virtual void gradient_descent_step(double lr) = 0;
-	virtual void clear_graph() = 0;
 
 };
+
 
 class SequentialModel {
 public:
@@ -37,10 +37,4 @@ public:
 		return t;
 	}
 
-	void clear_graph() {
-		for (const auto& layer : layers) {
-			layer->clear_graph();
-		}
-	}
-		
 };

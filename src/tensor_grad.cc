@@ -60,9 +60,9 @@ bool verify_predecessor_size(TensorNode* node, int expected) {
 void add_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
 	
-	TensorNode* a = node->predecessors[0];
-	TensorNode* b = node->predecessors[1];
-	
+	TensorNode* a = node->predecessors[0].get();
+	TensorNode* b = node->predecessors[1].get();
+
 	for (int i=0; i<node->grad.size(); i++) {
 		a->grad[i] += node->grad[i];
 		b->grad[i] += node->grad[i];
@@ -77,9 +77,9 @@ void add_backward(TensorNode* node) {
 // dx/db = -1
 void sub_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
-	
-	TensorNode* a = node->predecessors[0];
-	TensorNode* b = node->predecessors[1];
+
+	TensorNode* a = node->predecessors[0].get();
+	TensorNode* b = node->predecessors[1].get();
 
 	for (int i=0; i<node->grad.size(); i++) {
 		a->grad[i] += node->grad[i];
@@ -95,9 +95,9 @@ void sub_backward(TensorNode* node) {
 
 void mult_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
-	
-	TensorNode* a = node->predecessors[0];
-	TensorNode* b = node->predecessors[1];
+
+	TensorNode* a = node->predecessors[0].get();
+	TensorNode* b = node->predecessors[1].get();
 
 	for (int i=0; i<node->grad.size(); i++) {
 		a->grad[i] += (node->grad[i] * b->data[i]);
@@ -113,8 +113,8 @@ void mult_backward(TensorNode* node) {
 void div_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
 
-	TensorNode* a = node->predecessors[0];
-	TensorNode* b = node->predecessors[1];
+	TensorNode* a = node->predecessors[0].get();
+	TensorNode* b = node->predecessors[1].get();
 	
 	for (int i=0; i<node->grad.size(); i++) {
 		double dda = 1/b->data[i];
@@ -133,9 +133,9 @@ void div_backward(TensorNode* node) {
 
 void MATMUL_2D_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
-	
-	TensorNode* A = node->predecessors[0];
-	TensorNode* B = node->predecessors[1];
+
+	TensorNode* A = node->predecessors[0].get();
+	TensorNode* B = node->predecessors[1].get();
 	
 	// ddA, first transpose B, current node grad is ddC
 	B->permute({1, 0});
@@ -174,9 +174,9 @@ void MATMUL_2D_backward(TensorNode* node) {
 }
 
 void BIAS_ADD_2D_1D_backward(TensorNode* node) {
-	
-	TensorNode* A = node->predecessors[0];
-	TensorNode* B = node->predecessors[1];
+
+	TensorNode* A = node->predecessors[0].get();
+	TensorNode* B = node->predecessors[1].get();
 	
 	// A is the input matrix of size N, M
 	int N = A->shape[0];
