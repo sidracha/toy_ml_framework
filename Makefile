@@ -1,5 +1,6 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -Wall -Wextra -g -MMD -MP -Iinclude
+CXXFLAGS := -std=c++17 -Wall -Wextra -g -MMD -MP -Iinclude -I$(shell brew --prefix)/include
+LDFLAGS  := -L$(shell brew --prefix)/lib -lmatplot
 
 SRCDIR   := src
 BUILDDIR := build
@@ -15,7 +16,7 @@ TARGET := program
 all: $(TARGET)
 
 $(TARGET): $(OBJS)
-	$(CXX) $(CXXFLAGS) $^ -o $@
+	$(CXX) $(CXXFLAGS) $^ -o $@ $(LDFLAGS)
 
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cc | $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@

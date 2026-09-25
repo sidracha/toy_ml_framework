@@ -6,6 +6,27 @@
 #include <vector>
 #include <cmath>
 #include <iostream>
+#include <matplot/matplot.h>
+
+void plot_sine_prediction(Tensor& input, Tensor& prediction) {
+	std::vector<double> x_curve, y_curve;
+	for (double x = -3.14; x <= 3.14; x += 0.01) {
+		x_curve.push_back(x);
+		y_curve.push_back(std::sin(x));
+	}
+
+	std::vector<double> x_input, y_pred;
+	for (int i = 0; i < input.tensor_node->data.size(); i++) {
+		x_input.push_back(input.tensor_node->data[i]);
+		y_pred.push_back(prediction.tensor_node->data[i]);
+	}
+
+	matplot::plot(x_curve, y_curve, "-b");
+	matplot::hold(matplot::on);
+	matplot::scatter(x_input, y_pred)->marker_size(5).marker_color("red");
+	matplot::hold(matplot::off);
+	matplot::show();
+}
 
 Tensor create_expect_sine(Tensor t) {
 	
@@ -33,7 +54,7 @@ void train_sine(SequentialModel& model) {
 	// and these will be our input target
 	
 
-	double learning_rate = 0.1;
+	double learning_rate = 0.05;
 	Optimizer optim(model.layers, learning_rate);
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
@@ -58,5 +79,10 @@ void train_sine(SequentialModel& model) {
 		loss.backward();
 		optim.step();
 	}
+	
+	Tensor plot_input_tensor = create_tensor_random({64, 1}, -3.14, 3.14);
+	Tensor plot_output_tensor = model.forward(plot_input_tensor);
+
+	plot_sine_prediction(plot_input_tensor, plot_output_tensor);
 
 }
