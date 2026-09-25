@@ -54,15 +54,17 @@ void GEMM_2D_ADD (
 
 				// the col of B depends on j
 				// the row of B depends on k
-
-				index_A = linearize_index({i, k}, stride_A);
-				index_B = linearize_index({k, j}, stride_B);
+				
+				// compute indexes directly so dont have to 
+				// allocate a bunch of intermediete vectroins doing the fucntino call
+				index_A = i * stride_A[0] + k * stride_A[1];
+				index_B = k * stride_B[0] + j * stride_B[1];
 				
 				dot_product += data_A[index_A] * data_B[index_B];
 
 			}
 			
-			index_C = linearize_index({i, j}, stride_C);
+			index_C = i * stride_C[0] + j * stride_C[1];
 			data_C[index_C] += dot_product;
 
 		}
@@ -108,9 +110,13 @@ void MAT2D_1D_ADD (
 	for (int i=0; i<CN; i++) {
 		for (int j=0; j<CM; j++) {
 			// then we want to for each one just add the bias of j its no big deal
-			int index_A = linearize_index({i, j}, stride_A);
-			int index_B = linearize_index({j}, stride_B);
-			int index_C = linearize_index({i, j}, stride_C);
+			
+
+			// acain calculate indexes directly
+
+			int index_A = i * stride_A[0] + j * stride_A[1];
+			int index_B = j * stride_B[0];
+			int index_C = i * stride_C[0] + j * stride_C[1];
 			
 			//write the data into C
 			data_C[index_C] += data_A[index_A] + data_B[index_B];
