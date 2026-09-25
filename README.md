@@ -13,6 +13,15 @@ Parts that work:
 - simple Tensor permutations/arbitrary shapes/sizes for tensor
 - simple FFN trains
 
+Sin predictor 2500 iterations
+
+-model.register_layer<LinearSigmoid>(1, 100);
+-model.register_layer<LinearSigmoid>(100, 15);
+-model.register_layer<Linear>(15, 1);
+  
+<img width="492" height="395" alt="Screenshot 2026-09-25 at 12 00 01 AM" src="https://github.com/user-attachments/assets/b4d8cf9e-3aed-4b72-a816-24cf88889cdf" />
+
+
 TODO (in order of priority):
 - (DONE) change make_operator_output_node function take a list of predecessors
 - (DONE) have Tensor be param by reference, dont copy tensor objects everywhere
@@ -24,12 +33,4 @@ TODO (in order of priority):
 - Convolution
 - CUDA backends for GEMM
 
-Sin predictor 2500 iterations
 
-model.register_layer<LinearSigmoid>(1, 100);
-
-model.register_layer<LinearSigmoid>(100, 15);
-
-model.register_layer<Linear>(15, 1);
-  
-<img width="492" height="395" alt="Screenshot 2026-09-25 at 12 00 01 AM" src="https://github.com/user-attachments/assets/b4d8cf9e-3aed-4b72-a816-24cf88889cdf" />
