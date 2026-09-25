@@ -24,6 +24,7 @@ Sin predictor 2500 iterations
 TODO (in order of priority):
 - (DONE) change make_operator_output_node function take a list of predecessors
 - (DONE) have Tensor be param by reference, dont copy tensor objects everywhere
+- some sort of list of params that optimizer holds that can iterate through
 - add 3D batched tensors
 - add Model class custom forward methods
 - Xavier initialization
