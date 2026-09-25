@@ -9,6 +9,7 @@ int main () {
 	
 	SequentialModel model;
 	model.register_layer<LinearReLU>(1, 32);
+	model.register_layer<LinearReLU>(32, 32);
 	model.register_layer<LinearSigmoid>(32, 32);
 	model.register_layer<Linear>(32, 1);
 	//model.register_layer<LinearSigmoid>(300, 1);

@@ -8,9 +8,17 @@
 #include <iostream>
 #include <matplot/matplot.h>
 
+#define PI 3.14
+#define PI2 6.28
+#define TRAIN_DATA_MIN -PI2
+#define TRAIN_DATA_MAX PI2
+
+#define VAL_DATA_MIN -9.42
+#define VAL_DATA_MAX 9.42
+
 void plot_sine_prediction(Tensor& input, Tensor& prediction) {
 	std::vector<double> x_curve, y_curve;
-	for (double x = -3.14; x <= 3.14; x += 0.01) {
+	for (double x = -PI; x <= PI; x += 0.01) {
 		x_curve.push_back(x);
 		y_curve.push_back(std::sin(x));
 	}
@@ -42,7 +50,7 @@ Tensor create_expect_sine(Tensor t) {
 
 // since rows are the batch this will be of [BATCH_SIZE, 1]
 Tensor create_validation_set(int batch_size) {	
-	Tensor t = create_tensor_random({batch_size, 1}, -3.14, 3.14);
+	Tensor t = create_tensor_random({batch_size, 1}, TRAIN_DATA_MIN, TRAIN_DATA_MAX);
 	return t;
 }
 
@@ -59,11 +67,11 @@ void train_sine(SequentialModel& model) {
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
 	
-	int NUM_ITERATIONS = 2500;
+	int NUM_ITERATIONS = 1000;
 
 	while (NUM_ITERATIONS--) {
 
-		Tensor input_tensor = create_tensor_random({64, 1}, -3.14, 3.14);
+		Tensor input_tensor = create_tensor_random({64, 1}, TRAIN_DATA_MIN, TRAIN_DATA_MAX);
 		Tensor output_tensor = model.forward(input_tensor);
 		Tensor target_tensor = create_expect_sine(input_tensor);
 	
@@ -80,7 +88,7 @@ void train_sine(SequentialModel& model) {
 		optim.step();
 	}
 	
-	Tensor plot_input_tensor = create_tensor_random({64, 1}, -3.14, 3.14);
+	Tensor plot_input_tensor = create_tensor_random({64, 1}, VAL_DATA_MIN, VAL_DATA_MAX);
 	Tensor plot_output_tensor = model.forward(plot_input_tensor);
 
 	plot_sine_prediction(plot_input_tensor, plot_output_tensor);
