@@ -67,7 +67,7 @@ public:
 class Tensor {
 private:
 	
-	bool check_shapes_are_same(const Tensor& other) {
+	bool check_shapes_are_same(const Tensor& other) const {
 		return tensor_node->check_shapes_are_same(other.tensor_node);
 	}
 
@@ -87,16 +87,16 @@ public:
 	
 	void on_operator(const Tensor& other);
 	
-	Tensor operator+(const Tensor& other);
+	Tensor operator+(const Tensor& other) const;
 
-	Tensor operator-(const Tensor& other);
-	
-	Tensor operator*(const Tensor& other);
+	Tensor operator-(const Tensor& other) const;
 
-	Tensor operator/(const Tensor& other);
-	
-	Tensor MATMUL_2D_ADD(const Tensor& other);
-	Tensor BIAS_ADD_2D_1D(const Tensor& bias);
+	Tensor operator*(const Tensor& other) const;
+
+	Tensor operator/(const Tensor& other) const;
+
+	Tensor MATMUL_2D_ADD(const Tensor& other) const;
+	Tensor BIAS_ADD_2D_1D(const Tensor& bias) const;
 	
 	// return cur ^ scalar
 	// creates automatically a tensor node for this scalar value since we are

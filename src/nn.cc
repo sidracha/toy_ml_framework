@@ -4,7 +4,7 @@
 #include <cmath>
 // ReLU is an operation and should return a Tensor, we also have to calculate the backward pass..
 // for now its automatic
-Tensor ReLU(Tensor t) {
+Tensor ReLU(const Tensor& t) {
 	
 	// we have to make sure the shape and the stride are the same... but when we create it with the shape,
 	// it might be discontinuous...
@@ -28,7 +28,7 @@ double sigmoid(double x) {
 	return 1.0 / (1.0 + std::exp(-x));
 }
 
-Tensor Sigmoid (Tensor t) {
+Tensor Sigmoid (const Tensor& t) {
 	// I guess this is just a pointwise operation
 	// we have to create a new node for this... but will it be within the class?
 	// we need some extendable way to do this

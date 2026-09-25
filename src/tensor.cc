@@ -104,7 +104,7 @@ int Tensor::linearize_index(const std::vector<int>& index) {
 }
 
 // ADD 
-Tensor Tensor::operator+(const Tensor& other) {
+Tensor Tensor::operator+(const Tensor& other) const {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] + other.tensor_node->data[i];
@@ -115,7 +115,7 @@ Tensor Tensor::operator+(const Tensor& other) {
 
 
 // SUBTRACT
-Tensor Tensor::operator-(const Tensor& other) {
+Tensor Tensor::operator-(const Tensor& other) const {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] - other.tensor_node->data[i];
@@ -126,7 +126,7 @@ Tensor Tensor::operator-(const Tensor& other) {
 
 
 // MULTIPLY
-Tensor Tensor::operator*(const Tensor& other) {
+Tensor Tensor::operator*(const Tensor& other) const {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] * other.tensor_node->data[i];
@@ -138,7 +138,7 @@ Tensor Tensor::operator*(const Tensor& other) {
 
 
 // DIVIDE
-Tensor Tensor::operator/(const Tensor& other) {
+Tensor Tensor::operator/(const Tensor& other) const {
 	check_shapes_are_same(other);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] / other.tensor_node->data[i];
@@ -149,7 +149,7 @@ Tensor Tensor::operator/(const Tensor& other) {
 
 
 // MATMUL 2D
-Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) {
+Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
 	// we have to verify the shapes are the same, and that they are both only 2d
 	if (other.tensor_node->dim() != 2 || tensor_node->dim() != 2) throw InvalidTensorShape();
 	
@@ -198,7 +198,7 @@ Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) {
 }
 
 // ok get the N and M of the current
-Tensor Tensor::BIAS_ADD_2D_1D(const Tensor& bias) {
+Tensor Tensor::BIAS_ADD_2D_1D(const Tensor& bias) const {
 
 	int AN = shape()[0];
 	int AM = shape()[1];
