@@ -14,10 +14,9 @@ Parts that work:
 - simple FFN trains
 
 Sin predictor 2500 iterations
-
--model.register_layer<LinearSigmoid>(1, 100);
--model.register_layer<LinearSigmoid>(100, 15);
--model.register_layer<Linear>(15, 1);
+- model.register_layer<LinearReLU>(1, 32);
+- model.register_layer<LinearSigmoid>(32, 32);
+- model.register_layer<Linear>(32, 1);
   
 <img width="492" height="395" alt="Screenshot 2026-09-25 at 12 00 01 AM" src="https://github.com/user-attachments/assets/b4d8cf9e-3aed-4b72-a816-24cf88889cdf" />
 
