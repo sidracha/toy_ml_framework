@@ -1,6 +1,6 @@
 basic toy framework works
 
-implemented by hand in a day for fun as an exercise
+code implemented by hand in a weekend for fun n learning
 
 Parts that work:
 - add/mult/div/sub
