@@ -13,12 +13,10 @@ Parts that work:
 - simple Tensor permutations/arbitrary shapes/sizes for tensor
 - simple FFN trains
 
-Sin predictor 2500 iterations
-- model.register_layer<LinearReLU>(1, 32);
-- model.register_layer<LinearSigmoid>(32, 32);
-- model.register_layer<Linear>(32, 1);
+Sin predictor 10000 iterations
+Sigmoid except last 3 layers of 32
   
-<img width="492" height="395" alt="Screenshot 2026-09-25 at 12 00 01 AM" src="https://github.com/user-attachments/assets/b4d8cf9e-3aed-4b72-a816-24cf88889cdf" />
+<img width="525" height="394" alt="Screenshot 2026-09-25 at 11 38 16 PM" src="https://github.com/user-attachments/assets/7aadf235-208a-4ed3-b8a3-128c73c0f3cf" />
 
 
 TODO (in order of priority):
