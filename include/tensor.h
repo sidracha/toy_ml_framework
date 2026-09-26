@@ -60,6 +60,7 @@ public:
 	void set_predecessors(std::vector<std::shared_ptr<TensorNode>>& _predecessors) {
 		predecessors = std::move(_predecessors);
 	}
+	void transpose();
 
 };
 

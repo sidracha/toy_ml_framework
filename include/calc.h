@@ -1,6 +1,6 @@
 #include <vector>
 
-void GEMM_2D_ADD (
+void BATCHED_GEMM_2D_ADD (
 	const std::vector<double>& data_A,
 	const std::vector<int>& stride_A,
 	const std::vector<int>& shape_A,
@@ -15,7 +15,7 @@ void GEMM_2D_ADD (
 );
 
 
-void MAT2D_1D_ADD (
+void BATCHED_MAT2D_1D_ADD (
 	const std::vector<double>& data_A,
 	const std::vector<int>& stride_A,
 	const std::vector<int>& shape_A,

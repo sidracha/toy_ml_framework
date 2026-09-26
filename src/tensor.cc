@@ -27,11 +27,24 @@ void TensorNode::permute(const std::vector<int>& index_after) {
 	std::vector<int> shape_after(dim());
 	std::vector<int> stride_after(dim());
 	for (int i=0; i<index_after.size(); i++) {
-		shape_after[index_after[i]] = shape[i];
-		stride_after[index_after[i]] = stride[i];
+		shape_after[i] = shape[index_after[i]];
+		stride_after[i] = stride[index_after[i]];
 	}
 	stride = stride_after;
 	shape = shape_after;
+}
+
+// do a 2D transpose of the last 2 elements
+void TensorNode::transpose() {
+	int n = dim();
+	if (n < 2) throw std::runtime_error("Tranpose called with dim < 2");
+	std::vector<int> permute_vector(n);
+	for (int i=0; i<n-2; i++) permute_vector[i] = i;
+	// the last 2 elements after flipped
+	permute_vector[n-1] = n-2;
+	permute_vector[n-2] = n-1;
+	permute(permute_vector);
+
 }
 
 
@@ -151,14 +164,21 @@ Tensor Tensor::operator/(const Tensor& other) const {
 // MATMUL 2D
 Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
 	// we have to verify the shapes are the same, and that they are both only 2d
-	if (other.tensor_node->dim() != 2 || tensor_node->dim() != 2) throw InvalidTensorShape();
+	if (other.tensor_node->dim() < 2 || tensor_node->dim() < 2) throw InvalidTensorShape();
+	if (other.tensor_node->dim() > 3 || tensor_node->dim() > 3) throw InvalidTensorShape();
 	
-	int INPUT_N = tensor_node->shape[0];
-	int INPUT_M = tensor_node->shape[1];
-	int OTHER_N = other.tensor_node->shape[0];
-	int OTHER_M = other.tensor_node->shape[1];
-	int OUTPUT_N = INPUT_N;
-	int OUTPUT_M = OTHER_M;
+	int INPUT_N, INPUT_M, OTHER_N, OTHER_M, OUTPUT_N, OUTPUT_M;
+	
+	int index_N = (tensor_node->dim() == 3) ? 1 : 0;
+	int index_M = index_N + 1;
+	int B = (tensor_node->dim() == 3) ? tensor_node->shape[0] : 1;
+
+	INPUT_N = tensor_node->shape[index_N];
+	INPUT_M = tensor_node->shape[index_M];
+	OTHER_N = other.tensor_node->shape[0];
+	OTHER_M = other.tensor_node->shape[1];
+	OUTPUT_N = INPUT_N;
+	OUTPUT_M = OTHER_M;
 
 	// now check that the shape is correct for matmul
 	if (INPUT_M != OTHER_N) throw InvalidTensorShape();
@@ -171,13 +191,30 @@ Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
 	// we have shape N... we can do this by calculating the stride
 
 	// create ouptut buffer
-	std::vector<double> output(OUTPUT_N * OUTPUT_M, 0.0);
+		
+	// create the output buffer but we dont really have to do check anything, right? 
+	// like realistically for now we can just create it with the B * N * M
+	// and delegate the error handling into the otuput layer
+	// but we should probably catch that the shapes match for MATMUL
+
+	std::vector<double> output(B * OUTPUT_N * OUTPUT_M, 0.0);
 		
 
-	// use 2D GEMM KERNEL
-	std::vector<int> output_shape = {OUTPUT_N, OUTPUT_M};
-	std::vector<int> output_stride = {OUTPUT_M, 1};
-	GEMM_2D_ADD (
+	// use batched GEMM kernel
+	// this is bit inefficient but small can fix later
+	std::vector<int> output_shape;
+	std::vector<int> output_stride;
+	if (tensor_node->dim() == 3) {
+		output_shape = {B, OUTPUT_N, OUTPUT_M};
+		output_stride = {B*OUTPUT_M, OUTPUT_M, 1};
+	}
+	// this else works cuz we checked above
+	else {
+		output_shape = {OUTPUT_N, OUTPUT_M};
+		output_stride = {OUTPUT_M, 1};
+	}
+	
+	BATCHED_GEMM_2D_ADD (
 		tensor_node->data,
 		tensor_node->stride,
 		tensor_node->shape,
@@ -199,16 +236,25 @@ Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
 
 // ok get the N and M of the current
 Tensor Tensor::BIAS_ADD_2D_1D(const Tensor& bias) const {
-
-	int AN = shape()[0];
-	int AM = shape()[1];
 	
+	int index_N = (tensor_node->dim() == 3) ? 1 : 0;
+	int index_M = index_N + 1;
+	int AN = shape()[index_N];
+	int AM = shape()[index_M];
+	
+	// this is the batch size... the stride and shape should be the same 
+	// of the output and the input
+	int B = (tensor_node->dim() == 3) ? tensor_node->shape[0] : 1;	
+	// bias is unbatched
 	int BM = bias.shape()[0];
 	if (AM != BM) throw InvalidTensorShape();
 
-	std::vector<double> output(AN*AM, 0.0);
+	std::vector<double> output(B*AN*AM, 0.0);
+	
 
-	MAT2D_1D_ADD (
+	// this underlying kernel shoudl work with both 2D and 3D, 
+	// we can probably dispatch within that... but i think this should automatically do it
+	BATCHED_MAT2D_1D_ADD (
 		tensor_node->data,
 		stride(),
 		shape(),

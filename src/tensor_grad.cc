@@ -51,6 +51,10 @@
 // ASSUMES THAT GRAD FOR THE TENSOR IS CURRENTLY ALREADY CALCULATED
 // BACKPROP THE GRADIENTS IN THE CURRENT ONE TO THE CHILDREN
 
+
+// For now we assume shape == stride == same for all of these pointwise
+// operations, should all work with 3D tensors automatically
+
 bool verify_predecessor_size(TensorNode* node, int expected) {
 	if (node->predecessors.size() != expected) throw std::runtime_error("Predecessor size is not what is expected"); 
 }
@@ -138,8 +142,8 @@ void MATMUL_2D_backward(TensorNode* node) {
 	TensorNode* B = node->predecessors[1].get();
 	
 	// ddA, first transpose B, current node grad is ddC
-	B->permute({1, 0});
-	GEMM_2D_ADD (
+	B->transpose();
+	BATCHED_GEMM_2D_ADD (
 		node->grad,
 		node->stride,
 		node->shape,
@@ -152,11 +156,10 @@ void MATMUL_2D_backward(TensorNode* node) {
 	);
 
 	// B transpose back 
-	B->permute({1, 0});
-	
-	// transpose A	
-	A->permute({1, 0});
-	GEMM_2D_ADD (
+	B->transpose();	
+	// transpose A
+	A->transpose();
+	BATCHED_GEMM_2D_ADD (
 		A->data,
 		A->stride,
 		A->shape,
@@ -168,7 +171,7 @@ void MATMUL_2D_backward(TensorNode* node) {
 		B->shape
 	);
 	// transpose A back
-	A->permute({1, 0});
+	B->transpose();
 	
 	// the gradients are now populated into the predecessors
 }
@@ -178,23 +181,42 @@ void BIAS_ADD_2D_1D_backward(TensorNode* node) {
 	TensorNode* A = node->predecessors[0].get();
 	TensorNode* B = node->predecessors[1].get();
 	
-	// A is the input matrix of size N, M
-	int N = A->shape[0];
-	int M = A->shape[1];
+	// A is the input matrix of size B, N, M
+	
+	int BATCH = (A->dim() == 3) ? A->shape[0] : 1;
+	int index_N = (A->dim() == 3) ? 1 : 0;
+	int index_M = index_N + 1;
+	int N = A->shape[index_N];
+	int M = A->shape[index_M];
+	int A_dim = A->dim();
 	// B.shape[0] = M
 	// basically just add all the contributions since its column wise
 	// and for a, the grad is just all 1s, so its fine we just add it 
-	for (int j=0; j<M; j++) {
-		double ddb = 0.0;
-		for (int i=0; i<N; i++) {
-			int node_index = node->linearize_index({i, j});
-			ddb += node->grad[node_index];
-			// what is the gradient for A? just add the node gradient back into it
-			A->grad[node_index] += node->grad[node_index];
+	
+	// okkk so we loop over all of the batch as well... and we sum the gradients from the entire batch
+	// the entire batch also gets summed into ddb 
+	// but for ddA, we just want to add the gradient from the particular one also into the batch one
+	
+	int node_index;
+	for (int b=0; b<BATCH; b++) {
+		
+		for (int j=0; j<M; j++) {
+			double ddb = 0.0;
+			for (int i=0; i<N; i++) {
+				
 
-		}
-		// add the gradient to b
-		B->grad[j] += ddb;
+				// calculate the index directly without linearizing
+				if (A_dim == 3) node_index = b * node->stride[0] + i * node->stride[1] + j * node->stride[2];
+				else node_index = i * node->stride[0] + j * node->stride[1];
+
+				ddb += node->grad[node_index];
+				
+				// what is the gradient for A? just add the node gradient back into it
+				A->grad[node_index] += node->grad[node_index];
+
+			}
+			// add the gradient to b
+			B->grad[j] += ddb;
+		}		
 	}
-
 } 

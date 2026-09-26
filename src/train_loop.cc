@@ -64,9 +64,9 @@ Tensor create_input_random(int batch_size) {
 	
 	// introduce some stuff out of dist randomly so we can see if it generealizses
 	int x = rand() % 10;
-	if (x >= 5) return create_tensor_random({batch_size, 1}, -3, 0);
+	if (x >= 5) return create_tensor_random({batch_size, 1, 1}, -3, 0);
 	//else if (x >= 6) return create_tensor_random({batch_size, 1}, TRAIN_DATA_MIN+6, TRAIN_DATA_MAX+4);
-	else return create_tensor_random({batch_size, 1}, 1, 3);
+	else return create_tensor_random({batch_size, 1, 1}, 1, 3);
 }
 
 //lets train a simple predictor of sine and lets batch it
@@ -105,7 +105,7 @@ void train_fn(SequentialModel& model) {
 		learning_rate *= learning_rate_multiplier;
 	}
 	
-	Tensor plot_input_tensor = create_tensor_random({64, 1}, VAL_DATA_MIN, VAL_DATA_MAX);
+	Tensor plot_input_tensor = create_tensor_random({64, 1, 1}, VAL_DATA_MIN, VAL_DATA_MAX);
 	Tensor plot_output_tensor = model.forward(plot_input_tensor);
 
 	plot_fn_prediction(plot_input_tensor, plot_output_tensor, test_fn);

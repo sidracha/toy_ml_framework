@@ -6,6 +6,22 @@
 
 
 // eh fuck it only support 2D or 1D MSELoss right now
+
+Tensor MSELoss(Tensor a, Tensor b) {
+	if (a.stride() != b.stride() || a.shape() != b.shape()) {
+		throw std::runtime_error("Sorry, only tensors with the same shape and stride are supported for MSELoss");
+	}
+	int N = a.tensor_node->data.size();
+	if (N != b.tensor_node->data.size()) {
+		throw std::runtime_error("Data size mismatches for MSELoss");
+	}
+	
+	int dim = a.dim();
+	std::vector<double> output(1);
+		
+
+}
+
 Tensor MSELoss(Tensor a, Tensor b) {
 	if (a.dim() != 2 || b.dim() != 2) throw std::runtime_error("Sorry, only dim=2 is supported for MSELoss at this time");
 	if (a.stride() != b.stride() || a.shape() != b.shape()) throw std::runtime_error("Shape mismatch"); 
