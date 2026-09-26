@@ -62,7 +62,6 @@ bool verify_predecessor_size(TensorNode* node, int expected) {
 
 // ADD HAS TO BE OF THE SAME SHAPE
 void add_backward(TensorNode* node) {
-	std::cout << "add_backward called on node: " << node << std::endl;
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
@@ -81,7 +80,6 @@ void add_backward(TensorNode* node) {
 // dy/db = dx/db * dx/dy
 // dx/db = -1
 void sub_backward(TensorNode* node) {
-	std::cout << "sub_backward called on node: " << node << std::endl;
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
@@ -100,9 +98,6 @@ void sub_backward(TensorNode* node) {
 // so += grad[node] * b
 
 void mult_backward(TensorNode* node) {
-	std::cout << "mult_backward called on node: " << node
-						<< " node->grad[0]: " << node->grad[0]
-						<< " b->data[0] (mask): " << node->predecessors[1]->data[0] << std::endl;
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
@@ -112,7 +107,6 @@ void mult_backward(TensorNode* node) {
 		a->grad[i] += (node->grad[i] * b->data[i]);
 		b->grad[i] += (node->grad[i] * a->data[i]);
 	}
-	std::cout << "mult_backward - a->grad[0] after: " << a->grad[0] << std::endl;
 
 }
 
@@ -121,7 +115,6 @@ void mult_backward(TensorNode* node) {
 // dx/db = -a/b^2
 
 void div_backward(TensorNode* node) {
-	std::cout << "div_backward called on node: " << node << std::endl;
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
@@ -147,10 +140,7 @@ void MATMUL_2D_backward(TensorNode* node) {
 
 	TensorNode* A = node->predecessors[0].get();
 	TensorNode* B = node->predecessors[1].get();
-	std::cout << "MATMUL bwd - input[0]: " << A->data[0]
-						<< " grad_out[0]: " << node->grad[0]
-						<< " weight[0]: " << B->data[0] << std::endl;
-	// ddA = dC @ B^T
+	// ddA = dC * B^T
 	B->transpose();
 	BATCHED_GEMM_2D_ADD (
 		node->grad,
@@ -164,8 +154,11 @@ void MATMUL_2D_backward(TensorNode* node) {
 		A->shape
 	);
 	B->transpose();
-
-	// ddB = sum over leading dims of (A^T @ dC)
+	
+	// ddB kinda annoying cuz its only 2D....
+	// so it contributes to all of it in node
+	// so we have to do like the odometer stuff its 
+	// super annoying i hate doing this odometer shit
 	A->transpose();
 
 	int dim = A->shape.size();
@@ -214,9 +207,6 @@ void BIAS_ADD_2D_1D_backward(TensorNode* node) {
 
 	TensorNode* A = node->predecessors[0].get();
 	TensorNode* B = node->predecessors[1].get();
-	std::cout << "BIAS_ADD bwd - node pointer: " << node
-						<< " node->grad[0]: " << node->grad[0]
-						<< " A->grad[0] before: " << A->grad[0] << std::endl;
 	int dim_A = A->dim();
 	int index_N = dim_A-2;
 	int index_M = dim_A-1;
@@ -269,8 +259,6 @@ void BIAS_ADD_2D_1D_backward(TensorNode* node) {
 		}
 		int B_index = j * B->stride[0];
 		B->grad[B_index] += ddb;
-	} 
-  
-	std::cout << "BIAS_ADD bwd - A->grad[0] after: " << A->grad[0] << std::endl;
+	}
 }
 

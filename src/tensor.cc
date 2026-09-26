@@ -312,12 +312,6 @@ void Tensor::backward() {
 		std::shared_ptr<TensorNode> node = q.front();
 		q.pop_front();
 
-		std::cout << "backward() - processing node: " << node.get() << " preds.size(): " << node->predecessors.size()
-							<< " backward_fn is null: " << (node->backward_fn == nullptr) << std::endl;
-		for (int i=0; i<node->predecessors.size(); i++) {
-			std::cout << "  pred[" << i << "]: " << node->predecessors[i].get() << std::endl;
-		}
-
 		// call the backward_fn of the node here
 		node->backward_fn(node.get());
 		for (const auto& pred : node->predecessors) {

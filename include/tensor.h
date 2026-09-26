@@ -118,6 +118,7 @@ public:
 
 inline std::vector<int> stride_from_shape(const std::vector<int>& shape) {
 	std::vector<int> stride(shape.size());
+	stride[stride.size()-1] = 1;
 	for (int i=shape.size()-2; i>=0; i--) stride[i] = stride[i+1] * shape[i+1];
 	return stride;
 }

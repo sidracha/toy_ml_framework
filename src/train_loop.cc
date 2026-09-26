@@ -12,8 +12,8 @@
 
 #define PI 3.14
 #define PI2 6.28
-#define TRAIN_DATA_MIN 1
-#define TRAIN_DATA_MAX 5
+#define TRAIN_DATA_MIN -4
+#define TRAIN_DATA_MAX 4
 
 #define VAL_DATA_MIN -4
 #define VAL_DATA_MAX 4
@@ -66,9 +66,9 @@ Tensor create_input_random(int batch_size) {
 	
 	// introduce some stuff out of dist randomly so we can see if it generealizses
 	int x = rand() % 10;
-	if (x >= 20) return create_tensor_random({batch_size, 1, 1}, -3, 0);
+	if (x >= 5) return create_tensor_random({batch_size, 1, 1}, -3, 0);
 	//else if (x >= 6) return create_tensor_random({batch_size, 1}, TRAIN_DATA_MIN+6, TRAIN_DATA_MAX+4);
-	else return create_tensor_random({batch_size, 1, 1}, -2, 2);
+	else return create_tensor_random({batch_size, 1, 1}, TRAIN_DATA_MIN, TRAIN_DATA_MAX);
 }
 
 //lets train a simple predictor of sine and lets batch it
@@ -79,13 +79,13 @@ void train_fn(SequentialModel& model) {
 	// and these will be our input target
 	
 
-	double learning_rate = 0.01;
+	double learning_rate = 0.05;
 	double learning_rate_multiplier = 0.9996;
 	Optimizer optim(model.layers, learning_rate);
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
-	
-	int NUM_ITERATIONS = 10000;
+
+	int NUM_ITERATIONS = 50000;
 
 	while (NUM_ITERATIONS--) {
 		
@@ -103,11 +103,6 @@ void train_fn(SequentialModel& model) {
 		
 		optim.zero_grad();
 		loss.backward();
-		Linear* first_layer = dynamic_cast<Linear*>(model.layers[0].get());
-		std::cout << "weight[0]: " << first_layer->weight.tensor_node->data[0]
-							<< " grad: " << first_layer->weight.tensor_node->grad[0] << std::endl;
-		std::cout << "bias[0]: " << first_layer->bias.tensor_node->data[0]
-							<< " grad: " << first_layer->bias.tensor_node->grad[0] << std::endl;
 		optim.step();
 		learning_rate *= learning_rate_multiplier;
 	}

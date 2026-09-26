@@ -52,10 +52,8 @@ Tensor MSELoss(Tensor a, Tensor b) {
 // dda = (2/n) * (a-b)
 // ddb = -(2/n) * (a-b)
 void MSELoss_backward(TensorNode* node) {
-
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
-	std::cout << "MSE backward - a pointer: " << a << " a->grad.size(): " << a->grad.size() << std::endl;
 	int N = a->data.size();
 	double first_term, second_term, dda, ddb;
 	for (int i=0; i<N; i++) {
@@ -66,5 +64,4 @@ void MSELoss_backward(TensorNode* node) {
 		a->grad[i] += dda;
 		b->grad[i] += ddb;
 	}
-	std::cout << "MSE backward - a->grad[0] after write: " << a->grad[0] << std::endl;
 }

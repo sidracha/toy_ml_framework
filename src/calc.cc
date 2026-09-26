@@ -131,7 +131,7 @@ void BATCHED_GEMM_2D_ADD (
 				}
 
 				index_C = index_C_batch + i * stride_C[N_index] + j * stride_C[M_index];
-				data_C[index_C] = dot_product;
+				data_C[index_C] += dot_product;
 			}
 
 
