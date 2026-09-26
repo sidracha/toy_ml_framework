@@ -175,25 +175,35 @@ void MATMUL_2D_backward(TensorNode* node) {
 		odometer_A.push_back(0);
 		odometer_node.push_back(0);
 	}
-	int index_A = 0;
-	int index_node = 0;
 
-	while (index_A >= 0) {
+	// so in this case A index and B index are fine
+	// but ugh has to be extendable
+	// but technically......
+	// we do C = AB
+	// ... and C is Node
+	// but then C can have different dimensions to A...
+	// but then how will just moving that odometer index forward
+	// oh wait yeah its cuz of the first sahpes are the same
+	// but still better cuz it might have differnet strides and stuff, just for the future i guess
+	int odometer_index_A = 0;
+	int odometer_index_node = 0;
+
+	while (odometer_index_A >= 0) {
 
 		for (int i = 0; i < M; i++) {
 			for (int j = 0; j < K; j++) {
 				double dot_product = 0.0;
 				for (int k = 0; k < N; k++) {
-					int A_idx = index_A + i * A->stride[index_N] + k * A->stride[index_M];
-					int dC_idx = index_node + k * node->stride[index_N] + j * node->stride[index_M];
-					dot_product += A->data[A_idx] * node->grad[dC_idx];
+					int A_index = odometer_index_A + i * A->stride[index_N] + k * A->stride[index_M];
+					int dC_index = odometer_index_node + k * node->stride[index_N] + j * node->stride[index_M];
+					dot_product += A->data[A_index] * node->grad[dC_index];
 				}
-				int B_idx = i * B->stride[0] + j * B->stride[1];
-				B->grad[B_idx] += dot_product;
+				int B_index = i * B->stride[0] + j * B->stride[1];
+				B->grad[B_index] += dot_product;
 			}
 		}
-		index_A = odometer_next(odometer_A, A->shape, A->stride);
-		index_node = odometer_next(odometer_node, node->shape, node->stride);
+		odometer_index_A = odometer_next(odometer_A, A->shape, A->stride);
+		odometer_index_node = odometer_next(odometer_node, node->shape, node->stride);
 	}
 
 	A->transpose();
@@ -227,8 +237,8 @@ void BIAS_ADD_2D_1D_backward(TensorNode* node) {
 		odometer_node.push_back(0);
 		odometer_A.push_back(0);
 	}
-	int index_node = 0;
-	int index_A = 0;
+	int odometer_index_node = 0;
+	int odometer_index_A = 0;
 
 
 	for (int j=0; j<M; j++) {
@@ -238,23 +248,23 @@ void BIAS_ADD_2D_1D_backward(TensorNode* node) {
 			odometer_node[i] = 0;
 			odometer_A[i] = 0;
 		}
-		index_node = 0;
-		index_A = 0;
+		odometer_index_node = 0;
+		odometer_index_A = 0;
 
-		while (index_node >= 0) {
+		while (odometer_index_node >= 0) {
 			for (int i=0; i<N; i++) {
 
 				// uhhh we have to calculate the index for the node and the bias
 				// or whatever
-				int node_idx = index_node + i * node->stride[index_N] + j * node->stride[index_M];
-				int A_idx = index_A + i * A->stride[index_N] + j * A->stride[index_M];
+				int node_index = odometer_index_node + i * node->stride[index_N] + j * node->stride[index_M];
+				int A_index = odometer_index_A + i * A->stride[index_N] + j * A->stride[index_M];
 
-				ddb += node->grad[node_idx];
-				A->grad[A_idx] += node->grad[node_idx];
+				ddb += node->grad[node_index];
+				A->grad[A_index] += node->grad[node_index];
 
 			}
-			index_node = odometer_next(odometer_node, node->shape, node->stride);
-			index_A = odometer_next(odometer_A, A->shape, A->stride);
+			odometer_index_node = odometer_next(odometer_node, node->shape, node->stride);
+			odometer_index_A = odometer_next(odometer_A, A->shape, A->stride);
 
 		}
 		int B_index = j * B->stride[0];
