@@ -3,6 +3,7 @@
 #include "losses.h"
 #include "nn.h"
 #include "train_loop.h"
+#include "linear.h"
 
 #include <vector>
 #include <cmath>
@@ -23,8 +24,9 @@ double random_parabola(double x) {
 }
 
 test_fn_type test_fn = [](double x) {
-	//return std::exp(x);
-	return random_parabola(x);
+	//return x;
+	return std::sin(x);
+	//return random_parabola(x);
 };
 
 void plot_fn_prediction(Tensor& input, Tensor& prediction, test_fn_type fn) {
@@ -64,9 +66,9 @@ Tensor create_input_random(int batch_size) {
 	
 	// introduce some stuff out of dist randomly so we can see if it generealizses
 	int x = rand() % 10;
-	if (x >= 5) return create_tensor_random({batch_size, 1, 1}, -3, 0);
+	if (x >= 20) return create_tensor_random({batch_size, 1, 1}, -3, 0);
 	//else if (x >= 6) return create_tensor_random({batch_size, 1}, TRAIN_DATA_MIN+6, TRAIN_DATA_MAX+4);
-	else return create_tensor_random({batch_size, 1, 1}, 1, 3);
+	else return create_tensor_random({batch_size, 1, 1}, -2, 2);
 }
 
 //lets train a simple predictor of sine and lets batch it
@@ -77,13 +79,13 @@ void train_fn(SequentialModel& model) {
 	// and these will be our input target
 	
 
-	double learning_rate = 0.1;
+	double learning_rate = 0.01;
 	double learning_rate_multiplier = 0.9996;
 	Optimizer optim(model.layers, learning_rate);
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
 	
-	int NUM_ITERATIONS = 50000;
+	int NUM_ITERATIONS = 10000;
 
 	while (NUM_ITERATIONS--) {
 		
@@ -101,6 +103,11 @@ void train_fn(SequentialModel& model) {
 		
 		optim.zero_grad();
 		loss.backward();
+		Linear* first_layer = dynamic_cast<Linear*>(model.layers[0].get());
+		std::cout << "weight[0]: " << first_layer->weight.tensor_node->data[0]
+							<< " grad: " << first_layer->weight.tensor_node->grad[0] << std::endl;
+		std::cout << "bias[0]: " << first_layer->bias.tensor_node->data[0]
+							<< " grad: " << first_layer->bias.tensor_node->grad[0] << std::endl;
 		optim.step();
 		learning_rate *= learning_rate_multiplier;
 	}

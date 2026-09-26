@@ -62,8 +62,9 @@ bool verify_predecessor_size(TensorNode* node, int expected) {
 
 // ADD HAS TO BE OF THE SAME SHAPE
 void add_backward(TensorNode* node) {
+	std::cout << "add_backward called on node: " << node << std::endl;
 	verify_predecessor_size(node, 2);
-	
+
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
 
@@ -80,6 +81,7 @@ void add_backward(TensorNode* node) {
 // dy/db = dx/db * dx/dy
 // dx/db = -1
 void sub_backward(TensorNode* node) {
+	std::cout << "sub_backward called on node: " << node << std::endl;
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
@@ -98,6 +100,9 @@ void sub_backward(TensorNode* node) {
 // so += grad[node] * b
 
 void mult_backward(TensorNode* node) {
+	std::cout << "mult_backward called on node: " << node
+						<< " node->grad[0]: " << node->grad[0]
+						<< " b->data[0] (mask): " << node->predecessors[1]->data[0] << std::endl;
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
@@ -107,6 +112,7 @@ void mult_backward(TensorNode* node) {
 		a->grad[i] += (node->grad[i] * b->data[i]);
 		b->grad[i] += (node->grad[i] * a->data[i]);
 	}
+	std::cout << "mult_backward - a->grad[0] after: " << a->grad[0] << std::endl;
 
 }
 
@@ -115,18 +121,19 @@ void mult_backward(TensorNode* node) {
 // dx/db = -a/b^2
 
 void div_backward(TensorNode* node) {
+	std::cout << "div_backward called on node: " << node << std::endl;
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
-	
+
 	for (int i=0; i<node->grad.size(); i++) {
 		double dda = 1/b->data[i];
 		double b_data = b->data[i];
-		double ddb = -a->data[i] * (1/(b_data * b_data)); 
+		double ddb = -a->data[i] * (1/(b_data * b_data));
 		a->grad[i] += (node->grad[i] * dda);
 		b->grad[i] += (node->grad[i] * ddb);
-		
+
 	}
 
 }
@@ -140,8 +147,10 @@ void MATMUL_2D_backward(TensorNode* node) {
 
 	TensorNode* A = node->predecessors[0].get();
 	TensorNode* B = node->predecessors[1].get();
-	
-	// ddA, first transpose B, current node grad is ddC
+	std::cout << "MATMUL bwd - input[0]: " << A->data[0]
+						<< " grad_out[0]: " << node->grad[0]
+						<< " weight[0]: " << B->data[0] << std::endl;
+	// ddA = dC @ B^T
 	B->transpose();
 	BATCHED_GEMM_2D_ADD (
 		node->grad,
@@ -154,69 +163,114 @@ void MATMUL_2D_backward(TensorNode* node) {
 		A->stride,
 		A->shape
 	);
-
-	// B transpose back 
-	B->transpose();	
-	// transpose A
-	A->transpose();
-	BATCHED_GEMM_2D_ADD (
-		A->data,
-		A->stride,
-		A->shape,
-		node->grad,
-		node->stride,
-		node->shape,
-		B->grad,
-		B->stride,
-		B->shape
-	);
-	// transpose A back
 	B->transpose();
-	
-	// the gradients are now populated into the predecessors
+
+	// ddB = sum over leading dims of (A^T @ dC)
+	A->transpose();
+
+	int dim = A->shape.size();
+	int index_N = dim - 2;
+	int index_M = dim - 1;
+
+	int M = A->shape[index_N];
+	int N = A->shape[index_M];
+	int K = node->shape[index_M];
+
+	std::vector<int> odometer_A;
+	std::vector<int> odometer_node;
+	for (int i = 0; i < index_N; i++) {
+		odometer_A.push_back(0);
+		odometer_node.push_back(0);
+	}
+	int index_A = 0;
+	int index_node = 0;
+
+	while (index_A >= 0) {
+
+		for (int i = 0; i < M; i++) {
+			for (int j = 0; j < K; j++) {
+				double dot_product = 0.0;
+				for (int k = 0; k < N; k++) {
+					int A_idx = index_A + i * A->stride[index_N] + k * A->stride[index_M];
+					int dC_idx = index_node + k * node->stride[index_N] + j * node->stride[index_M];
+					dot_product += A->data[A_idx] * node->grad[dC_idx];
+				}
+				int B_idx = i * B->stride[0] + j * B->stride[1];
+				B->grad[B_idx] += dot_product;
+			}
+		}
+		index_A = odometer_next(odometer_A, A->shape, A->stride);
+		index_node = odometer_next(odometer_node, node->shape, node->stride);
+	}
+
+	A->transpose();
 }
 
+
 void BIAS_ADD_2D_1D_backward(TensorNode* node) {
+	
+	
+	// soooo A is gonna be the full matrix
 
 	TensorNode* A = node->predecessors[0].get();
 	TensorNode* B = node->predecessors[1].get();
-	
-	// A is the input matrix of size B, N, M
-	
-	int BATCH = (A->dim() == 3) ? A->shape[0] : 1;
-	int index_N = (A->dim() == 3) ? 1 : 0;
-	int index_M = index_N + 1;
+	std::cout << "BIAS_ADD bwd - node pointer: " << node
+						<< " node->grad[0]: " << node->grad[0]
+						<< " A->grad[0] before: " << A->grad[0] << std::endl;
+	int dim_A = A->dim();
+	int index_N = dim_A-2;
+	int index_M = dim_A-1;
 	int N = A->shape[index_N];
 	int M = A->shape[index_M];
-	int A_dim = A->dim();
-	// B.shape[0] = M
+
+	// uhhhhh we prob need the odometer here, right? 
 	// basically just add all the contributions since its column wise
 	// and for a, the grad is just all 1s, so its fine we just add it 
 	
 	// okkk so we loop over all of the batch as well... and we sum the gradients from the entire batch
 	// the entire batch also gets summed into ddb 
 	// but for ddA, we just want to add the gradient from the particular one also into the batch one
-	
-	int node_index;
-	for (int b=0; b<BATCH; b++) {
 		
-		for (int j=0; j<M; j++) {
-			double ddb = 0.0;
+	std::vector<int> odometer_node;
+	std::vector<int> odometer_A;
+	for (int i=0; i<index_N; i++) {
+		odometer_node.push_back(0);
+		odometer_A.push_back(0);
+	}
+	int index_node = 0;
+	int index_A = 0;
+
+
+	for (int j=0; j<M; j++) {
+
+		double ddb = 0.0;
+		for (int i=0; i<odometer_node.size(); i++) {
+			odometer_node[i] = 0;
+			odometer_A[i] = 0;
+		}
+		index_node = 0;
+		index_A = 0;
+
+		while (index_node >= 0) {
 			for (int i=0; i<N; i++) {
-				
 
-				// calculate the index directly without linearizing
-				if (A_dim == 3) node_index = b * node->stride[0] + i * node->stride[1] + j * node->stride[2];
-				else node_index = i * node->stride[0] + j * node->stride[1];
+				// uhhh we have to calculate the index for the node and the bias
+				// or whatever
+				int node_idx = index_node + i * node->stride[index_N] + j * node->stride[index_M];
+				int A_idx = index_A + i * A->stride[index_N] + j * A->stride[index_M];
 
-				ddb += node->grad[node_index];
-				
-				// what is the gradient for A? just add the node gradient back into it
-				A->grad[node_index] += node->grad[node_index];
+				ddb += node->grad[node_idx];
+				A->grad[A_idx] += node->grad[node_idx];
 
 			}
-			// add the gradient to b
-			B->grad[j] += ddb;
-		}		
-	}
-} 
+			index_node = odometer_next(odometer_node, node->shape, node->stride);
+			index_A = odometer_next(odometer_A, A->shape, A->stride);
+
+		}
+		int B_index = j * B->stride[0];
+		B->grad[B_index] += ddb;
+	} 
+  
+	std::cout << "BIAS_ADD bwd - A->grad[0] after: " << A->grad[0] << std::endl;
+}
+

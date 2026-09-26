@@ -7,6 +7,7 @@
 #include <stdexcept>
 #include <cmath>
 #include <random>
+#include <iostream>
 
 class TensorShapeMismatch : public std::runtime_error {
 public:
@@ -164,14 +165,12 @@ Tensor Tensor::operator/(const Tensor& other) const {
 // MATMUL 2D
 Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
 	// we have to verify the shapes are the same, and that they are both only 2d
-	if (other.tensor_node->dim() < 2 || tensor_node->dim() < 2) throw InvalidTensorShape();
-	if (other.tensor_node->dim() > 3 || tensor_node->dim() > 3) throw InvalidTensorShape();
-	
+	if (tensor_node->dim() < 2 || other.tensor_node->dim() < 2) throw InvalidTensorShape();
 	int INPUT_N, INPUT_M, OTHER_N, OTHER_M, OUTPUT_N, OUTPUT_M;
 	
-	int index_N = (tensor_node->dim() == 3) ? 1 : 0;
-	int index_M = index_N + 1;
-	int B = (tensor_node->dim() == 3) ? tensor_node->shape[0] : 1;
+	int dim_A = dim();
+	int index_N = dim_A - 2;
+	int index_M = dim_A - 1;
 
 	INPUT_N = tensor_node->shape[index_N];
 	INPUT_M = tensor_node->shape[index_M];
@@ -196,24 +195,22 @@ Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
 	// like realistically for now we can just create it with the B * N * M
 	// and delegate the error handling into the otuput layer
 	// but we should probably catch that the shapes match for MATMUL
+	
+	int total_first_dims = 1;
+	std::vector<int> output_shape;
+	for (int i=0; i<dim_A-2; i++) {
+		total_first_dims *= tensor_node->shape[i];
+		output_shape.push_back(tensor_node->shape[i]);
+	}
+	output_shape.push_back(OUTPUT_N);
+	output_shape.push_back(OUTPUT_M);
+	std::vector<int> output_stride = stride_from_shape(output_shape);
 
-	std::vector<double> output(B * OUTPUT_N * OUTPUT_M, 0.0);
+	std::vector<double> output(total_first_dims * OUTPUT_N * OUTPUT_M, 0.0);
 		
 
 	// use batched GEMM kernel
 	// this is bit inefficient but small can fix later
-	std::vector<int> output_shape;
-	std::vector<int> output_stride;
-	if (tensor_node->dim() == 3) {
-		output_shape = {B, OUTPUT_N, OUTPUT_M};
-		output_stride = {B*OUTPUT_M, OUTPUT_M, 1};
-	}
-	// this else works cuz we checked above
-	else {
-		output_shape = {OUTPUT_N, OUTPUT_M};
-		output_stride = {OUTPUT_M, 1};
-	}
-	
 	BATCHED_GEMM_2D_ADD (
 		tensor_node->data,
 		tensor_node->stride,
@@ -237,19 +234,23 @@ Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
 // ok get the N and M of the current
 Tensor Tensor::BIAS_ADD_2D_1D(const Tensor& bias) const {
 	
-	int index_N = (tensor_node->dim() == 3) ? 1 : 0;
-	int index_M = index_N + 1;
+	int dim = tensor_node->dim();
+	int index_N = dim-2;
+	int index_M = dim-1;
+
 	int AN = shape()[index_N];
 	int AM = shape()[index_M];
-	
-	// this is the batch size... the stride and shape should be the same 
+
 	// of the output and the input
-	int B = (tensor_node->dim() == 3) ? tensor_node->shape[0] : 1;	
 	// bias is unbatched
 	int BM = bias.shape()[0];
 	if (AM != BM) throw InvalidTensorShape();
 
-	std::vector<double> output(B*AN*AM, 0.0);
+	int total_first_dims = 1;
+	for (int i=0; i<index_N; i++) {
+		total_first_dims *= tensor_node->shape[i];
+	}	
+	std::vector<double> output(total_first_dims*AN*AM, 0.0);
 	
 
 	// this underlying kernel shoudl work with both 2D and 3D, 
@@ -291,26 +292,32 @@ Tensor Tensor::pow(double scalar) {
 
 
 void Tensor::backward() {
-	
+
 	// set the current gradient of the node to 1
 	for (int i=0; i<tensor_node->grad.size(); i++) {
 		tensor_node->grad[i] = 1.0;
 	}
-	
+
 	// make the queue here
 	std::deque<std::shared_ptr<TensorNode>> q;
 	q.push_back(tensor_node);
 	while (q.size() > 0) {
-		
+
 		// get the predecessors, then decrement their indegree
 		// if their indegree is 0 and a backward fn is attached, we can add to the queue
 		// well everything should be a binary operator
 		// oh we can iterate over the parents too, right?
 		// call backward on this node, then add the next nodes into the queue one by one
-		
+
 		std::shared_ptr<TensorNode> node = q.front();
 		q.pop_front();
-		
+
+		std::cout << "backward() - processing node: " << node.get() << " preds.size(): " << node->predecessors.size()
+							<< " backward_fn is null: " << (node->backward_fn == nullptr) << std::endl;
+		for (int i=0; i<node->predecessors.size(); i++) {
+			std::cout << "  pred[" << i << "]: " << node->predecessors[i].get() << std::endl;
+		}
+
 		// call the backward_fn of the node here
 		node->backward_fn(node.get());
 		for (const auto& pred : node->predecessors) {

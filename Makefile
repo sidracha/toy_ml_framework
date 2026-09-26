@@ -1,5 +1,5 @@
 CXX      := g++
-CXXFLAGS := -std=c++17 -Ofast -w -g -MMD -MP -Iinclude -I$(shell brew --prefix)/include
+CXXFLAGS := -std=c++20 -Ofast -w -g -MMD -MP -Iinclude -I$(shell brew --prefix)/include
 LDFLAGS  := -L$(shell brew --prefix)/lib -lmatplot
 
 SRCDIR   := src

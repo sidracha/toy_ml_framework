@@ -115,6 +115,13 @@ public:
 	
 };
 
+
+inline std::vector<int> stride_from_shape(const std::vector<int>& shape) {
+	std::vector<int> stride(shape.size());
+	for (int i=shape.size()-2; i>=0; i--) stride[i] = stride[i+1] * shape[i+1];
+	return stride;
+}
+
 std::shared_ptr<TensorNode> make_operator_output_node(
 	std::vector<double>& data,
 	const std::vector<int>& shape,

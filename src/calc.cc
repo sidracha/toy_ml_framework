@@ -1,5 +1,6 @@
 #include <vector>
 #include <stdexcept>
+#include <format>
 
 int linearize_index(const std::vector<int>& index, const std::vector<int>& stride) {
 	int ret = 0;
@@ -87,51 +88,58 @@ void BATCHED_GEMM_2D_ADD (
 	int CM = shape_C[M_index];
 	
 	if (AM != BN) throw std::runtime_error(
-		std::format("Shape mismatch ({} x {}) and ({} x {})", AN, AM, BN, BM);
+		std::format("Shape mismatch ({} x {}) and ({} x {})", AN, AM, BN, BM)
 	);
 	if (CN != AN || CM != BM) {
 		throw std::runtime_error("Shape mismatch for input and output buffer");
 	}
 
 	// ok so basically have an odometer vector
-	std::vector<int> oodometer;
-	for (int i=0; i<N_index; i++) odometer.push_back(0);
-	
+	std::vector<int> odometer_A;
+	std::vector<int> odometer_C;
+	for (int i=0; i<N_index; i++) {
+		odometer_A.push_back(0);
+		odometer_C.push_back(0);
+	}
+
 	// thennnn we can go to the next odometer sure....
 	// first have the loop to iterate over the odometer
-	int index_odometer = 0;
+	int index_A_batch = 0;
+	int index_C_batch = 0;
 
 	// basically loops over all of the initial dimensions... then inside we want to properly go over
 	// the back 2 dimensions N and M
-	
+
 	int index_A, index_B, index_C;
-	while (index >= 0) {
-			
+	while (index_A_batch >= 0) {
+
 		// iterate over the output positions
 		for (int i=0; i<CN; i++) {
 			for (int j=0; j<CM; j++) {
 				// iterate over the colums of A, which are the rows of B
 				double dot_product = 0.0;
 				for (int k=0; k<AM; k++) {
-					
+
 					// A = [i][k]
 					// B = [k][j]
 					// C = [i][j]
 					// and we have to add up the stuff in k
-					index_A = index_odometer + i * stride_A[N_index] + k * stride_A[M_index];
+					index_A = index_A_batch + i * stride_A[N_index] + k * stride_A[M_index];
 					index_B = k * stride_B[0] + j * stride_B[1];
-					
+
 					dot_product += (data_A[index_A] * data_B[index_B]);
 				}
+
+				index_C = index_C_batch + i * stride_C[N_index] + j * stride_C[M_index];
+				data_C[index_C] = dot_product;
 			}
-			
-			index_C = index_odometer + i * stride_C[N_index] + j * stride_C[M_index];
-			data_C[index_C] = dot_product;
+
 
 		}
 		// we want to do next on what, the stride of A whcih
 		// is also the stride of C.. and i think we are done
-		index = next(odometer, shape_A, stride_A);
+		index_A_batch = odometer_next(odometer_A, shape_A, stride_A);
+		index_C_batch = odometer_next(odometer_C, shape_C, stride_C);
 
 	}
 
@@ -180,85 +188,33 @@ void BATCHED_MAT2D_1D_ADD (
 	int CN = shape_C[index_N];
 	int CM = shape_C[index_M];
 	
-	std::vector<int> oodometer;
-	for (int i=0; i<N_index; i++) odometer.push_back(0);
+	std::vector<int> odometer;
+	for (int i=0; i<index_N; i++) odometer.push_back(0);
 	int index_odometer = 0;
 	
 
 	// iterate over the first dimensions
-	// then iterate over the output positions
-	//
-	while (index_odometer >= 0) {
-		
-	}
-
-}
-
-void BATCHED_MAT2D_1D_ADD (
-	const std::vector<double>& data_A,
-	const std::vector<int>& stride_A,
-	const std::vector<int>& shape_A,
+	// then iterate over the output positions i guess
+	// to EACH ROW WE ADD THE BIAS
 	
-	const std::vector<double>& data_B,
-	const std::vector<int>& stride_B,
-	const std::vector<int>& shape_B,
-	
-	std::vector<double>& data_C,
-	const std::vector<int>& stride_C,
-	const std::vector<int>& shape_C
-
-) {	
-	
-
-	// same thing here I guess...
-	// we add the bias row-wise and also to each batch...
-	
-	// the output has to also be the same but we already verified this i guess
-	//
-	
-	if (shape_C != shape_A || stride_C != stride_A) throw std::runtime_error("Invalid shapes for buffer");
-	
-	
-	int batch_A = calc_batch_size(shape_A);
-	int index_N = (shape_A.size() == 3) ? 1 : 0;
-	int index_M = index_N + 1;
-
-	int AN = shape_A[index_N];
-	int AM = shape_A[index_M];
-	
-	int BM = shape_B[0];
-	
-	int CN = AN;
-	int CM = AM;
-	
-	if (CM != BM) throw std::runtime_error("Bias size mismatch");
-	
-	// iterate over the batch then
-	// iterate over the output postitions
 	int index_A, index_B, index_C;
-	for (int b=0; b<batch_A; b++) {
+	while (index_odometer >= 0) {
 		
 		for (int i=0; i<CN; i++) {
 			for (int j=0; j<CM; j++) {
-				// then we want to for each one just add the bias of j its no big deal
-				
-
-				// acain calculate indexes directly with batch
-				// i guess we have to do the same thing for C but since we enforce the same
-				// stride and shape for now, we can just reuse this is kind of ugly tho
-				// TODO: add real stride-aware GEMMs
-				if (batch_A == 1) index_A = b * stride_A[0] + i * stride_A[1] + j * stride_A[2];
-				else index_A = i * stride_A[0] + j * stride_A[1];
-
+					
+				// sooo which ones get the offset? probably A and C
+				index_A = index_odometer + i * stride_A[index_N] + j * stride_A[index_M];
 				index_B = j * stride_B[0];
-				index_C = index_A;	
+				index_C = index_A;
 				
-				//write the data into C
-				data_C[index_C] += data_A[index_A] + data_B[index_B];
-
+				data_C[index_C] += (data_A[index_A] + data_B[index_B]);
 			}
 		}
-	
+
+		//incremenet the odometer for each first dim
+		index_odometer = odometer_next(odometer, shape_A, stride_A);
 	}
+
 }
 

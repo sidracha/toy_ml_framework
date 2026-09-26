@@ -3,29 +3,14 @@
 
 #include <cmath>
 #include <stdexcept>
+#include <iostream>
 
-
-// eh fuck it only support 2D or 1D MSELoss right now
-
+// make the stride and stuff the same
 Tensor MSELoss(Tensor a, Tensor b) {
-	if (a.stride() != b.stride() || a.shape() != b.shape()) {
-		throw std::runtime_error("Sorry, only tensors with the same shape and stride are supported for MSELoss");
-	}
-	int N = a.tensor_node->data.size();
-	if (N != b.tensor_node->data.size()) {
-		throw std::runtime_error("Data size mismatches for MSELoss");
-	}
 	
-	int dim = a.dim();
-	std::vector<double> output(1);
-		
-
-}
-
-Tensor MSELoss(Tensor a, Tensor b) {
-	if (a.dim() != 2 || b.dim() != 2) throw std::runtime_error("Sorry, only dim=2 is supported for MSELoss at this time");
-	if (a.stride() != b.stride() || a.shape() != b.shape()) throw std::runtime_error("Shape mismatch"); 
-
+	if (a.shape() != b.shape() || a.stride() != b.stride()) {
+		throw std::runtime_error("Tensor shapes do not match");
+	}
 	// each row holds a "vector"
 	// so I guess calculate the MSE of the vectors first
 	
@@ -34,19 +19,21 @@ Tensor MSELoss(Tensor a, Tensor b) {
 	
 	// this is JUST the forward pass I guess
 	std::vector<double> output(1);
+	// we can do it in blocks ok but this will be left as a TODO
+	// for now just sum all of it...
+	// worst case the output tensor wont be that bad right
+	// like in bubbleML its like 32 * 5 * 4 * 512 * 512 with a value of 1
+	// in practice its less than that but thats like less than an int
+	// so should be fine
 	
-	int N = a.shape()[0];
-	int M = a.shape()[1];
-	for (int i=0; i<N; i++) {
-		double row_sum = 0.0;
-		for (int j=0; j<M; j++) {
-			int a_index = a.linearize_index({i, j});
-			int b_index = b.linearize_index({i, j});
-			row_sum += (std::pow((a.tensor_node->data[a_index] - b.tensor_node->data[b_index]), 2)) / static_cast<double>(M);
-		}
-		output[0] += row_sum / static_cast<double>(N);
-	} 
-	
+	double sum = 0;
+	for (int i=0; i<a.tensor_node->data.size(); i++) {
+		double diff = (a.tensor_node->data[i] - b.tensor_node->data[i]);
+		sum += diff*diff;
+	}
+	sum /= a.tensor_node->data.size();
+	output[0] = sum;
+
 	//we have to make the node, I guess?
 	std::shared_ptr<TensorNode> node = make_operator_output_node(
 			output, 
@@ -62,33 +49,22 @@ Tensor MSELoss(Tensor a, Tensor b) {
 // this is pretty easy, actually.
 // lets fuse the nodes too, I guess
 
-// dda = (2/mn) * (a-b)
-// ddb = -(2/mn) * (a-b)
+// dda = (2/n) * (a-b)
+// ddb = -(2/n) * (a-b)
 void MSELoss_backward(TensorNode* node) {
 
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
-	
-	// just write the values in, tihs is pretty easy
-	int N = a->shape[0];
-	int M = a->shape[1];
-	// multiply also by the grad of the current node
-
+	std::cout << "MSE backward - a pointer: " << a << " a->grad.size(): " << a->grad.size() << std::endl;
+	int N = a->data.size();
+	double first_term, second_term, dda, ddb;
 	for (int i=0; i<N; i++) {
-		for (int j=0; j<M; j++) {
-			int a_index = a->linearize_index({i, j});
-			int b_index = b->linearize_index({i, j});
-			
-			double first_term = 2 / (static_cast<double>(M)*static_cast<double>(N));
-			double second_term = (a->data[a_index] - b->data[b_index]);
-		
-			double dda = node->grad[0] * first_term * second_term;
-			double ddb = -1.0 * node->grad[0] * first_term * second_term;
-
-			a->grad[a_index] += dda;
-			b->grad[b_index] += ddb;
- 
-		}
+		first_term = 2 / static_cast<double>(N);
+		second_term = (a->data[i] - b->data[i]);
+		dda = node->grad[0] * first_term * second_term;
+		ddb = -1.0 * node->grad[0] * first_term * second_term;
+		a->grad[i] += dda;
+		b->grad[i] += ddb;
 	}
-
+	std::cout << "MSE backward - a->grad[0] after write: " << a->grad[0] << std::endl;
 }

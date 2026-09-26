@@ -1,5 +1,7 @@
 #include <vector>
 
+int odometer_next(std::vector<int>& odometer, const std::vector<int>& shape, const std::vector<int>& stride);
+
 void BATCHED_GEMM_2D_ADD (
 	const std::vector<double>& data_A,
 	const std::vector<int>& stride_A,
