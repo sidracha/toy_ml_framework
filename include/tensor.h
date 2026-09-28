@@ -91,19 +91,19 @@ public:
 	Tensor operator-(const Tensor& other) const;
 
 	Tensor operator*(const Tensor& other) const;
+	Tensor operator*(double scalar) const;
 
 	Tensor operator/(const Tensor& other) const;
+	Tensor operator/(double scalar) const;
+	
+	// returns cur^scalar
+	Tensor pow(double scalar) const;
+	
+	// returns e^cur
+	Tensor exp();
 
 	Tensor MATMUL_2D_ADD(const Tensor& other) const;
 	Tensor BIAS_ADD_2D_1D(const Tensor& bias) const;
-	
-	// return cur ^ scalar
-	// creates automatically a tensor node for this scalar value since we are
-	// doing a pointwise power 
-	Tensor pow(double scalar);
-	
-	// returns e^ cur
-	Tensor exp();
 
 	void backward(bool retain_graph);
 

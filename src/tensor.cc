@@ -145,7 +145,19 @@ Tensor Tensor::operator*(const Tensor& other) const {
 	return Tensor(node);
 }
 
+Tensor Tensor::operator*(double scalar) const {
+	
+	std::vector<double> scalar_vector(1, scalar);
+	std::vector<double> output(tensor_node->data.size());
+	for (int i=0; i<output.size(); i++) output[i] = tensor_node->data[i] * scalar;
+	std::shared_ptr<TensorNode> scalar_node = make_operator_output_node(
+		scalar_vector, {1}, {}, nullptr);
 
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node}, mult_backward);
+	return Tensor(node);
+
+}
 
 // DIVIDE
 Tensor Tensor::operator/(const Tensor& other) const {
@@ -156,6 +168,36 @@ Tensor Tensor::operator/(const Tensor& other) const {
 		output, shape(), {tensor_node, other.tensor_node}, div_backward);
 	return Tensor(node);
 }
+
+Tensor Tensor::operator/(double scalar) const {
+	
+	std::vector<double> scalar_vector(1, scalar);
+	std::vector<double> output(tensor_node->data.size());
+	for (int i=0; i<output.size(); i++) output[i] = tensor_node->data[i] / scalar;
+	std::shared_ptr<TensorNode> scalar_node = make_operator_output_node(
+		scalar_vector, {1}, {}, nullptr);
+
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node}, div_backward);
+	return Tensor(node);
+
+}
+
+
+Tensor Tensor::pow(double scalar) const {
+	
+	std::vector<double> scalar_vector(1, scalar);
+	std::vector<double> output(tensor_node->data.size());
+	for (int i=0; i<output.size(); i++) output[i] = std::pow(tensor_node->data[i], scalar);
+	std::shared_ptr<TensorNode> scalar_node = make_operator_output_node(
+		scalar_vector, {1}, {}, pow_backward);
+
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, shape(), {tensor_node}, pow_backward);
+	return Tensor(node);
+
+}
+
 
 
 // MATMUL 2D
@@ -270,21 +312,6 @@ Tensor Tensor::BIAS_ADD_2D_1D(const Tensor& bias) const {
 	return Tensor(node); 
 
 }
-
-/*
-Tensor Tensor::pow(double scalar) {
-	Tensor new_tensor = create_tensor_clone_scalar(*this, graph, scalar);
-	// create the new tensor.. now we can safely do a pointwise pow
-	
-	std::vector<double> output(tensor_node->data.size());
-	for (int i=0; i<tensor_node->data.size(); i++) {
-		double new_value = std::pow(tensor_node->data[i], scalar);
-		output[i] = new_value;
-	}
-	TensorNode* raw = make_operator_output_node(output, tensor_node->shape, Op::POW, tensor_node, new_tensor.tensor_node, graph);
-	return Tensor(raw, graph);
-}
-*/
 
 
 void Tensor::backward(bool retain_graph) {

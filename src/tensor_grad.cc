@@ -69,7 +69,8 @@ void add_backward(TensorNode* node) {
 
 	for (int i=0; i<node->grad.size(); i++) {
 		a->grad[i] += node->grad[i];
-		b->grad[i] += node->grad[i];
+		// for the scalar operations
+		if (i == 0 || b->data.size() > 1) b->grad[i] += node->grad[i];
 	}
 
 }
@@ -87,7 +88,7 @@ void sub_backward(TensorNode* node) {
 
 	for (int i=0; i<node->grad.size(); i++) {
 		a->grad[i] += node->grad[i];
-		b->grad[i] -= node->grad[i];
+		if (i == 0 || b->data.size() > 1) b->grad[i] -= node->grad[i];
 	}
 }
 
@@ -102,10 +103,13 @@ void mult_backward(TensorNode* node) {
 
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
-
+	
 	for (int i=0; i<node->grad.size(); i++) {
-		a->grad[i] += (node->grad[i] * b->data[i]);
-		b->grad[i] += (node->grad[i] * a->data[i]);
+		// bit ugly but we dont even care about b here 
+		int b_index = (b->data.size() == 1) ? 0 : i;
+		
+		a->grad[i] += (node->grad[i] * b->data[b_index]);
+		b->grad[b_index] += (node->grad[i] * a->data[i]);
 	}
 
 }
@@ -121,11 +125,30 @@ void div_backward(TensorNode* node) {
 	TensorNode* b = node->predecessors[1].get();
 
 	for (int i=0; i<node->grad.size(); i++) {
-		double dda = 1/b->data[i];
-		double b_data = b->data[i];
-		double ddb = -a->data[i] * (1/(b_data * b_data));
+		int b_index = (b->data.size() == 1) ? 0 : i;
+		double dda = 1/b->data[b_index];
+		double ddb = -a->data[i] / (b->data[b_index] * b->data[b_index]);
 		a->grad[i] += (node->grad[i] * dda);
-		b->grad[i] += (node->grad[i] * ddb);
+		b->grad[b_index] += (node->grad[i] * ddb);
+
+	}
+
+}
+
+void pow_backward(TensorNode* node) {
+
+	TensorNode* a = node->predecessors[0].get();
+	TensorNode* b = node->predecessors[1].get();
+	
+	// c = a^b
+	// dc/da = ba^(b-1)
+	// dc/db = (a^b)*ln(a)
+	for (int i=0; i<node->grad.size(); i++) {
+		int b_index = (b->data.size() > 1) ? 0 : i;
+		double dda = b->data[b_index] * std::pow(a->data[i], b->data[b_index]-1);
+		double ddb = std::pow(a->data[i], b->data[b_index]) * std::log(a->data[i]);
+		a->grad[i] += dda;
+		b->grad[b_index] += ddb;
 
 	}
 
