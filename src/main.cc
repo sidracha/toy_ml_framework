@@ -61,8 +61,8 @@ int main () {
 	loss.backward(false);
 	optimizer.step();
 
-	//MLP mlp; 
-	//train_fn(mlp);
+	MLP mlp; 
+	train_fn(mlp);
 	return 0;
 	
 }

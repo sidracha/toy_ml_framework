@@ -184,20 +184,23 @@ void MATMUL_2D_backward(TensorNode* node) {
 	// super annoying i hate doing this odometer shit
 	A->transpose();
 
-	int dim = A->shape.size();
-	int index_N = dim - 2;
-	int index_M = dim - 1;
+	int dim_A = A->shape.size();
+	int index_AN = dim_A - 2;
+	int index_AM = dim_A - 1;
 
-	int M = A->shape[index_N];
-	int N = A->shape[index_M];
-	int K = node->shape[index_M];
+	int dim_B = B->shape.size();
+	int index_BN = dim_B - 2;
+	int index_BM = dim_B - 1;
 
-	std::vector<int> odometer_A;
-	std::vector<int> odometer_node;
-	for (int i = 0; i < index_N; i++) {
-		odometer_A.push_back(0);
-		odometer_node.push_back(0);
-	}
+	int AN = A->shape[index_AN];
+	int AM = A->shape[index_AM];
+	int K = node->shape[index_AM];
+
+	std::vector<int> odometer_A(index_AN, 0.0);
+	std::vector<int> odometer_node(index_AN, 0.0);
+	
+	std::vector<int> odometer_B;
+	for (int i=0; i<index_BN; i++) odometer_B.push_back(0);
 
 	// so in this case A index and B index are fine
 	// but ugh has to be extendable
@@ -209,23 +212,25 @@ void MATMUL_2D_backward(TensorNode* node) {
 	// oh wait yeah its cuz of the first sahpes are the same
 	// but still better cuz it might have differnet strides and stuff, just for the future i guess
 	int odometer_index_A = 0;
+	int odometer_index_B = 0;
 	int odometer_index_node = 0;
 
 	while (odometer_index_A >= 0) {
 
-		for (int i = 0; i < M; i++) {
+		for (int i = 0; i < AN; i++) {
 			for (int j = 0; j < K; j++) {
 				double dot_product = 0.0;
-				for (int k = 0; k < N; k++) {
-					int A_index = odometer_index_A + i * A->stride[index_N] + k * A->stride[index_M];
-					int dC_index = odometer_index_node + k * node->stride[index_N] + j * node->stride[index_M];
+				for (int k = 0; k < AM; k++) {
+					int A_index = odometer_index_A + i * A->stride[index_AN] + k * A->stride[index_AM];
+					int dC_index = odometer_index_node + k * node->stride[index_AN] + j * node->stride[index_AM];
 					dot_product += A->data[A_index] * node->grad[dC_index];
 				}
-				int B_index = i * B->stride[0] + j * B->stride[1];
+				int B_index = std::max(odometer_index_B, 0) + i * B->stride[index_BN] + j * B->stride[index_BM]; 
 				B->grad[B_index] += dot_product;
 			}
 		}
 		odometer_index_A = odometer_next(odometer_A, A->shape, A->stride);
+		odometer_index_B = odometer_next(odometer_B, B->shape, B->stride);
 		odometer_index_node = odometer_next(odometer_node, node->shape, node->stride);
 	}
 
