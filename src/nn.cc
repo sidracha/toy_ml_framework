@@ -154,13 +154,13 @@ void softmax_backward(TensorNode* node) {
 		double upstream_sum = 0.0;
 		for (int i=0; i<N; i++) {
 			int data_index = odometer_index + i * node->stride[N_index];
-			upstream_sum += (node->grad[i] * node->data[data_index]);
+			upstream_sum += (node->grad[data_index] * node->data[data_index]);
 		}
 
 		for (int i=0; i<N; i++) {
 			int data_index = odometer_index + i * node->stride[N_index];
 			// write into the downstream z, which is A
-			A->grad[data_index] = node->data[data_index] * (node->grad[data_index] - upstream_sum); 
+			A->grad[data_index] += node->data[data_index] * (node->grad[data_index] - upstream_sum); 
 		}
 
 		odometer_index = odometer_next(odometer, node->shape, node->stride);
