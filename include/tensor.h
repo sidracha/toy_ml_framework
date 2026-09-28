@@ -16,7 +16,6 @@ public:
 	std::vector<int> shape;
 	std::vector<int> stride;
 	std::vector<std::shared_ptr<TensorNode>> predecessors;
-	ll indegree = 0;
 
 	// backwards function takes in the current TensorNode
 	std::function<void(TensorNode*)> backward_fn;
@@ -31,7 +30,6 @@ public:
 		shape(_shape),
 		stride(_stride) {}
 	
-	void increase_indegree();
 	int dim() {
 		return shape.size();
 	}
@@ -107,7 +105,7 @@ public:
 	// returns e^ cur
 	Tensor exp();
 
-	void backward();
+	void backward(bool retain_graph);
 
 	std::vector<int> shape() const {return tensor_node->shape;}
 	std::vector<int> stride() const {return tensor_node->stride;}

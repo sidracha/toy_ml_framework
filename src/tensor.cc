@@ -19,9 +19,6 @@ public:
 	InvalidTensorShape() : std::runtime_error("Invalid Tensor Shape") {};
 };
 
-void TensorNode::increase_indegree() {
-	indegree++;
-}
 
 
 void TensorNode::permute(const std::vector<int>& index_after) {
@@ -106,7 +103,6 @@ std::shared_ptr<TensorNode> make_operator_output_node (
 	std::function<void(TensorNode*)> backward_fn) {
 	
 	std::shared_ptr<TensorNode> node = create_tensor_node(data, shape);
-	for (const auto& predecessor : predecessors) predecessor->indegree++;
 	node->predecessors = predecessors;
 	node->backward_fn = backward_fn;
 	return node;
@@ -291,16 +287,43 @@ Tensor Tensor::pow(double scalar) {
 */
 
 
-void Tensor::backward() {
+void Tensor::backward(bool retain_graph) {
+
+	// should we make the graph here actually? and traverse
+	// it in reverse topological order? maybe have like an indegree
+	// unordered map or something
+	
+	// walk backwards, do a dfs? id rather do a bfs to protect the call stack
+	std::deque<std::shared_ptr<TensorNode>> indegree_q;
+	std::unordered_map<std::shared_ptr<TensorNode>, int> indegree;
+	indegree_q.push_back(tensor_node);
+	indegree[tensor_node] = 0;
+	while (indegree_q.size() > 0) {
+		// add the predecessors to the queue, but also track in the indegree set. dont 
+		// push back if icurrently already in the indegree set
+		std::shared_ptr<TensorNode> node = indegree_q.front();
+		indegree_q.pop_front();
+
+		for (const auto& pred : node->predecessors) {
+			if (indegree[pred] == 0) { //doenst exist, have to add to the queue
+				indegree_q.push_back(pred);
+			}
+			indegree[pred]++;
+		} 
+
+	}
+	// now we can add all the 0 indegree ones into
+	// the queue
 
 	// set the current gradient of the node to 1
 	for (int i=0; i<tensor_node->grad.size(); i++) {
 		tensor_node->grad[i] = 1.0;
 	}
-
-	// make the queue here
+	
 	std::deque<std::shared_ptr<TensorNode>> q;
-	q.push_back(tensor_node);
+	for (const auto& [key, val] : indegree) {
+		if (val == 0) q.push_back(key);
+	} 
 	while (q.size() > 0) {
 
 		// get the predecessors, then decrement their indegree
@@ -316,14 +339,15 @@ void Tensor::backward() {
 		node->backward_fn(node.get());
 		for (const auto& pred : node->predecessors) {
 			if (pred == nullptr) continue;
-			pred->indegree--;
+			indegree[pred]--;
 			// add to the backprop queue if the conditions are met
-			if (pred->indegree == 0 && pred->backward_fn != nullptr) q.push_back(pred); 
+			if (indegree[pred] == 0 && pred->backward_fn != nullptr) q.push_back(pred); 
 		}
 		// we have already pushed into the deque, which has a reference to it.
 		// now we can do clear
-		node->predecessors.clear();
+		if (!retain_graph) node->predecessors.clear();
 
 	}
+
 
 }

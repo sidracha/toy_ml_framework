@@ -15,8 +15,8 @@
 #define TRAIN_DATA_MIN -4
 #define TRAIN_DATA_MAX 4
 
-#define VAL_DATA_MIN -4
-#define VAL_DATA_MAX 4
+#define VAL_DATA_MIN -8
+#define VAL_DATA_MAX 8
 
 double random_parabola(double x) {
 	double y = -pow((x-2.0), 2) + 5.0;
@@ -102,7 +102,7 @@ void train_fn(SequentialModel& model) {
 		std::cout << loss.tensor_node->data[0] << " " << output_sum / static_cast<double>(64) << std::endl;
 		
 		optim.zero_grad();
-		loss.backward();
+		loss.backward(false);
 		optim.step();
 		learning_rate *= learning_rate_multiplier;
 	}
