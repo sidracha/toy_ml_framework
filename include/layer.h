@@ -17,11 +17,11 @@ public:
 };
 
 
-class SequentialModel {
+class SequentialLayer : public Layer {
 public:
 	std::vector<std::unique_ptr<Layer>> layers;
 
-	SequentialModel() {}
+	SequentialLayer() {}
 	
 	template <typename T, typename... Args>
 	void register_layer(Args&&... args) {
@@ -37,4 +37,19 @@ public:
 		return t;
 	}
 
+	void zero_grad() {
+		for (const auto& layer : layers) layer->zero_grad();
+	}
+	void gradient_descent_step(double lr) {
+		for (const auto& layer : layers) layer->gradient_descent_step(lr);
+	}
+
+};
+
+class Model {
+public:
+	Model() {};
+	
+	virtual Tensor forward(Tensor t) = 0;
+	virtual std::vector<std::unique_ptr<Layer>>& get_layers() = 0;
 };

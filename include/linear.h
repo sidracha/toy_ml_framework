@@ -23,7 +23,7 @@ public:
 		: N(_N),
 		M(_M),
 		weight(create_tensor_random({N, M}, DIST_MIN, DIST_MAX)),
-		bias(create_tensor_random({M}, DIST_MIN, DIST_MAX)) {
+		bias(create_tensor_zeros({M})) {
 
 		if (N <= 0 || M <= 0) throw std::runtime_error("Invalid linear layer shape");
 	

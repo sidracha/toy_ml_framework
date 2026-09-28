@@ -12,11 +12,11 @@
 
 #define PI 3.14
 #define PI2 6.28
-#define TRAIN_DATA_MIN -4
-#define TRAIN_DATA_MAX 4
+#define TRAIN_DATA_MIN -3
+#define TRAIN_DATA_MAX 3
 
-#define VAL_DATA_MIN -8
-#define VAL_DATA_MAX 8
+#define VAL_DATA_MIN -6
+#define VAL_DATA_MAX 6
 
 double random_parabola(double x) {
 	double y = -pow((x-2.0), 2) + 5.0;
@@ -24,7 +24,7 @@ double random_parabola(double x) {
 }
 
 test_fn_type test_fn = [](double x) {
-	//return x;
+	//return 3*x + 5;
 	return std::sin(x);
 	//return random_parabola(x);
 };
@@ -72,7 +72,7 @@ Tensor create_input_random(int batch_size) {
 }
 
 //lets train a simple predictor of sine and lets batch it
-void train_fn(SequentialModel& model) {
+void train_fn(Model& model) {
 	
 	// weve already created the model and it has a forward method
 	// we can just first create random tensors its fine... they will be our batch fn....
@@ -81,7 +81,7 @@ void train_fn(SequentialModel& model) {
 
 	double learning_rate = 0.05;
 	double learning_rate_multiplier = 0.9996;
-	Optimizer optim(model.layers, learning_rate);
+	Optimizer optim(model.get_layers(), learning_rate);
 	// now lets create random tenosrs off g in a loop
 	// and this is our training loop
 
