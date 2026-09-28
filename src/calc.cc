@@ -75,17 +75,22 @@ void BATCHED_GEMM_2D_ADD (
 	if (shape_A.size() != shape_C.size()) {
 		throw std::runtime_error("dim mismatch in GEMM");
 	}
-	int dim = shape_A.size();
-	
+	int dim_A = shape_A.size();
+	int dim_B = shape_B.size();
+
 	// use the last 2 indexes as the N and M for the matmul but this is basically for A and C
-	int N_index = dim-2;
-	int M_index = dim-1;
-	int AN = shape_A[N_index];
-	int AM = shape_A[M_index];
-	int BN = shape_B[0];
-	int BM = shape_B[1];
-	int CN = shape_C[N_index];
-	int CM = shape_C[M_index];
+	int AN_index = dim_A-2;
+	int AM_index = dim_A-1;
+
+	int BN_index = dim_B-2;
+	int BM_index = dim_B-1;
+	
+	int AN = shape_A[AN_index];
+	int AM = shape_A[AM_index];
+	int BN = shape_B[BN_index];
+	int BM = shape_B[BM_index];
+	int CN = shape_C[AN_index];
+	int CM = shape_C[AM_index];
 	
 	if (AM != BN) throw std::runtime_error(
 		std::format("Shape mismatch ({} x {}) and ({} x {})", AN, AM, BN, BM)
@@ -95,23 +100,23 @@ void BATCHED_GEMM_2D_ADD (
 	}
 
 	// ok so basically have an odometer vector
-	std::vector<int> odometer_A;
-	std::vector<int> odometer_C;
-	for (int i=0; i<N_index; i++) {
-		odometer_A.push_back(0);
-		odometer_C.push_back(0);
-	}
+	std::vector<int> odometer_A(dim_A-2, 0);
+	std::vector<int> odometer_C(dim_A-2, 0);
+
+	std::vector<int> odometer_B;
+	for (int i=0; i<dim_B-2; i++) odometer_B.push_back(0);
 
 	// thennnn we can go to the next odometer sure....
 	// first have the loop to iterate over the odometer
-	int index_A_batch = 0;
-	int index_C_batch = 0;
+	int odometer_index_A = 0;
+	int odometer_index_B = 0;
+	int odometer_index_C = 0;
 
 	// basically loops over all of the initial dimensions... then inside we want to properly go over
 	// the back 2 dimensions N and M
 
 	int index_A, index_B, index_C;
-	while (index_A_batch >= 0) {
+	while (odometer_index_A >= 0) {
 
 		// iterate over the output positions
 		for (int i=0; i<CN; i++) {
@@ -124,13 +129,13 @@ void BATCHED_GEMM_2D_ADD (
 					// B = [k][j]
 					// C = [i][j]
 					// and we have to add up the stuff in k
-					index_A = index_A_batch + i * stride_A[N_index] + k * stride_A[M_index];
-					index_B = k * stride_B[0] + j * stride_B[1];
+					index_A = odometer_index_A + i * stride_A[AN_index] + k * stride_A[AM_index];
+					index_B = std::max(0, odometer_index_B) + k * stride_B[BN_index] + j * stride_B[BM_index];
 
 					dot_product += (data_A[index_A] * data_B[index_B]);
 				}
 
-				index_C = index_C_batch + i * stride_C[N_index] + j * stride_C[M_index];
+				index_C = odometer_index_C + i * stride_C[AN_index] + j * stride_C[AM_index];
 				data_C[index_C] += dot_product;
 			}
 
@@ -138,8 +143,9 @@ void BATCHED_GEMM_2D_ADD (
 		}
 		// we want to do next on what, the stride of A whcih
 		// is also the stride of C.. and i think we are done
-		index_A_batch = odometer_next(odometer_A, shape_A, stride_A);
-		index_C_batch = odometer_next(odometer_C, shape_C, stride_C);
+		odometer_index_A = odometer_next(odometer_A, shape_A, stride_A);
+		odometer_index_B = odometer_next(odometer_B, shape_B, stride_B);
+		odometer_index_C = odometer_next(odometer_C, shape_C, stride_C);
 
 	}
 

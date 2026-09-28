@@ -51,7 +51,7 @@ int main () {
 	// okkk so what do we do here
 	// [B, S, E]
 	Tensor t = create_tensor_zeros({8, 64, 512});
-	Tensor target = create_tensor_scalar({8, 64, 512}, 1.0);
+	Tensor target = create_tensor_scalar({8, 64, 128}, 1.0);
 
 	Tensor output = self_attn.forward(t);
 	Tensor loss = MSELoss(output, target);

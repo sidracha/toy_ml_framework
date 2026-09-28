@@ -154,7 +154,7 @@ Tensor Tensor::operator*(double scalar) const {
 		scalar_vector, {1}, {}, nullptr);
 
 	std::shared_ptr<TensorNode> node = make_operator_output_node(
-		output, shape(), {tensor_node}, mult_backward);
+		output, shape(), {tensor_node, scalar_node}, mult_backward);
 	return Tensor(node);
 
 }
@@ -178,7 +178,7 @@ Tensor Tensor::operator/(double scalar) const {
 		scalar_vector, {1}, {}, nullptr);
 
 	std::shared_ptr<TensorNode> node = make_operator_output_node(
-		output, shape(), {tensor_node}, div_backward);
+		output, shape(), {tensor_node, scalar_node}, div_backward);
 	return Tensor(node);
 
 }
@@ -189,11 +189,12 @@ Tensor Tensor::pow(double scalar) const {
 	std::vector<double> scalar_vector(1, scalar);
 	std::vector<double> output(tensor_node->data.size());
 	for (int i=0; i<output.size(); i++) output[i] = std::pow(tensor_node->data[i], scalar);
+	
 	std::shared_ptr<TensorNode> scalar_node = make_operator_output_node(
 		scalar_vector, {1}, {}, pow_backward);
 
 	std::shared_ptr<TensorNode> node = make_operator_output_node(
-		output, shape(), {tensor_node}, pow_backward);
+		output, shape(), {tensor_node, scalar_node}, pow_backward);
 	return Tensor(node);
 
 }
@@ -207,13 +208,15 @@ Tensor Tensor::MATMUL_2D(const Tensor& other) const {
 	int INPUT_N, INPUT_M, OTHER_N, OTHER_M, OUTPUT_N, OUTPUT_M;
 	
 	int dim_A = dim();
+	int dim_other = other.dim();
 	int index_N = dim_A - 2;
 	int index_M = dim_A - 1;
 
 	INPUT_N = tensor_node->shape[index_N];
 	INPUT_M = tensor_node->shape[index_M];
-	OTHER_N = other.tensor_node->shape[0];
-	OTHER_M = other.tensor_node->shape[1];
+	
+	OTHER_N = other.tensor_node->shape[dim_other-2];
+	OTHER_M = other.tensor_node->shape[dim_other-1];
 	OUTPUT_N = INPUT_N;
 	OUTPUT_M = OTHER_M;
 

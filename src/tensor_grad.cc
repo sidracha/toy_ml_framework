@@ -55,7 +55,7 @@
 // For now we assume shape == stride == same for all of these pointwise
 // operations, should all work with 3D tensors automatically
 
-bool verify_predecessor_size(TensorNode* node, int expected) {
+void verify_predecessor_size(TensorNode* node, int expected) {
 	if (node->predecessors.size() != expected) throw std::runtime_error("Predecessor size is not what is expected"); 
 }
 
