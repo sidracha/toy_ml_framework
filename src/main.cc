@@ -4,6 +4,9 @@
 #include "linear.h"
 #include "layer.h"
 #include "train_loop.h"
+#include "optimizer.h"
+#include "attention.h"
+#include "losses.h"
 
 class MLP : public Model {
 public:
@@ -41,8 +44,25 @@ public:
 
 int main () {
 	
-	MLP mlp; 
-	train_fn(mlp);
+	SelfAttn self_attn(512, 128);
+
+	double learning_rate = 0.05;
+	Optimizer optimizer(self_attn.layers, learning_rate);
+	// okkk so what do we do here
+	// [B, S, E]
+	Tensor t = create_tensor_zeros({8, 64, 512});
+	Tensor target = create_tensor_scalar({8, 64, 512}, 1.0);
+
+	Tensor output = self_attn.forward(t);
+	Tensor loss = MSELoss(output, target);
+	
+
+	optimizer.zero_grad();
+	loss.backward(false);
+	optimizer.step();
+
+	//MLP mlp; 
+	//train_fn(mlp);
 	return 0;
 	
 }

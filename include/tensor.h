@@ -102,7 +102,7 @@ public:
 	// returns e^cur
 	Tensor exp();
 
-	Tensor MATMUL_2D_ADD(const Tensor& other) const;
+	Tensor MATMUL_2D(const Tensor& other) const;
 	Tensor BIAS_ADD_2D_1D(const Tensor& bias) const;
 
 	void backward(bool retain_graph);
@@ -110,6 +110,7 @@ public:
 	std::vector<int> shape() const {return tensor_node->shape;}
 	std::vector<int> stride() const {return tensor_node->stride;}
 	int dim() const {return tensor_node->dim();}
+	void transpose() {tensor_node->transpose();}
 	
 };
 

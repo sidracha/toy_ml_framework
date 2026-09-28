@@ -201,7 +201,7 @@ Tensor Tensor::pow(double scalar) const {
 
 
 // MATMUL 2D
-Tensor Tensor::MATMUL_2D_ADD(const Tensor& other) const {
+Tensor Tensor::MATMUL_2D(const Tensor& other) const {
 	// we have to verify the shapes are the same, and that they are both only 2d
 	if (tensor_node->dim() < 2 || other.tensor_node->dim() < 2) throw InvalidTensorShape();
 	int INPUT_N, INPUT_M, OTHER_N, OTHER_M, OUTPUT_N, OUTPUT_M;
