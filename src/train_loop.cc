@@ -100,20 +100,18 @@ Tensor create_input_random() {
 }
 
 void train_fn() {
-	std::vector<std::unique_ptr<Layer>> layers;
-	layers.push_back(std::make_unique<Linear>(E, E));
-	Linear* lin = dynamic_cast<Linear*>(layers[0].get());
+	
+	SelfAttnBlock model(2, E, 4, ReLU);
 
 	double learning_rate = 0.05;
 	double learning_rate_multiplier = 0.9996;
-	Optimizer optim(layers, learning_rate);
+	Optimizer optim(model.layers, learning_rate);
 
-	int NUM_ITERATIONS = 5000;
+	int NUM_ITERATIONS = 50000;
 
 	for (int i=0; i<NUM_ITERATIONS; i++) {
 		Tensor input_tensor = create_input_random();
-		Tensor after_softmax = softmax(input_tensor);
-		Tensor output_tensor = lin->forward(after_softmax);
+		Tensor output_tensor = model.forward(input_tensor);
 		Tensor target_tensor = create_reversed_last_dim(input_tensor);
 
 		double output_sum = 0.0;

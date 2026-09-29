@@ -38,8 +38,8 @@ SelfAttn::SelfAttn(int _num_heads, int _embed_dim) {
 	// headed self attn? 
 	// yeah keep it i guess
 	layers.push_back(std::make_unique<Linear>(embed_dim, embed_dim));
-	output_projection_layer = dynamic_cast<Linear*>(layers[layers.size()-1].get());	
-
+	output_projection_layer = dynamic_cast<Linear*>(layers[layers.size()-1].get());
+	
 }
 
 Tensor SelfAttn::forward(Tensor t) {
@@ -89,8 +89,13 @@ void SelfAttn::gradient_descent_step(double lr) {
 
 
 Tensor SelfAttnBlock::forward(Tensor t) {
-	t = attn->forward(t);
-	t = mlp->forward(t);
-	return t;
+	Tensor n1 = norm1->forward(t);
+	Tensor a = attn->forward(n1);
+	Tensor x = t + a;
+	Tensor n2 = norm2->forward(x);
+	Tensor ffn = mlp->forward(n2);
+	Tensor y = x + ffn;
+
+	return y;
 }
 

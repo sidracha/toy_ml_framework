@@ -17,6 +17,8 @@ public:
 	std::vector<int> stride;
 	std::vector<std::shared_ptr<TensorNode>> predecessors;
 	int concat_dim = -1;
+	std::vector<int> normalize_dims;
+	int eps;
 
 	// backwards function takes in the current TensorNode
 	std::function<void(TensorNode*)> backward_fn;
@@ -112,6 +114,9 @@ public:
 	std::vector<int> stride() const {return tensor_node->stride;}
 	int dim() const {return tensor_node->dim();}
 	void transpose() {tensor_node->transpose();}
+
+	double data_at(int index) {return tensor_node->data[index];}
+	double grad_at(int index) {return tensor_node->grad[index];}
 	
 };
 
@@ -126,6 +131,14 @@ inline std::vector<int> stride_from_shape(const std::vector<int>& shape) {
 std::shared_ptr<TensorNode> make_operator_output_node(
 	std::vector<double>& data,
 	const std::vector<int>& shape,
+	const std::vector<std::shared_ptr<TensorNode>>& predecessors,
+	std::function<void(TensorNode*)> backward_fn);
+
+
+std::shared_ptr<TensorNode> make_operator_output_node(
+	std::vector<double>& data,
+	const std::vector<int>& shape,
+	const std::vector<int>& stride,
 	const std::vector<std::shared_ptr<TensorNode>>& predecessors,
 	std::function<void(TensorNode*)> backward_fn);
 

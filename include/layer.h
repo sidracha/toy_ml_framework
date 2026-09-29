@@ -11,6 +11,7 @@ public:
 	std::vector<std::unique_ptr<Layer>> layers;
 
 	Layer() {}
+	virtual ~Layer() = default;
 
 	virtual Tensor forward(Tensor t) = 0;
 	virtual void zero_grad() = 0;

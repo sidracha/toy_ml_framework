@@ -108,6 +108,18 @@ std::shared_ptr<TensorNode> make_operator_output_node (
 	return node;
 }
 
+std::shared_ptr<TensorNode> make_operator_output_node (
+	std::vector<double>& data,
+	const std::vector<int>& shape,
+	const std::vector<int>& stride,
+	const std::vector<std::shared_ptr<TensorNode>>& predecessors,
+	std::function<void(TensorNode*)> backward_fn) {
+	
+	std::shared_ptr<TensorNode> node = create_tensor_node(data, shape, stride);
+	node->predecessors = predecessors;
+	node->backward_fn = backward_fn;
+	return node;
+}
 
 int Tensor::linearize_index(const std::vector<int>& index) {
 	return tensor_node->linearize_index(index);
