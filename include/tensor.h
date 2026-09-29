@@ -16,6 +16,7 @@ public:
 	std::vector<int> shape;
 	std::vector<int> stride;
 	std::vector<std::shared_ptr<TensorNode>> predecessors;
+	int concat_dim = -1;
 
 	// backwards function takes in the current TensorNode
 	std::function<void(TensorNode*)> backward_fn;
@@ -129,8 +130,10 @@ std::shared_ptr<TensorNode> make_operator_output_node(
 	std::function<void(TensorNode*)> backward_fn);
 
 Tensor create_tensor_zeros(const std::vector<int>& shape);
-
 Tensor create_tensor_random(const std::vector<int>& shape, double DIST_MIN, double DIST_MAX);
 Tensor create_tensor_scalar(const std::vector<int>& shape, double scalar);
-
 Tensor create_tensor_clone_scalar(const Tensor& t, double scalar);
+
+bool bool_odometer_next(std::vector<int>& odometer, const std::vector<int>& shape);
+int calculate_offset(const std::vector<int>& odometer, const std::vector<int>& stride);
+Tensor transpose(const Tensor& t);

@@ -11,3 +11,5 @@ void pow_backward(TensorNode* node);
 
 void MATMUL_2D_backward(TensorNode* node);
 void BIAS_ADD_2D_1D_backward(TensorNode* node);
+
+void transpose_backward(TensorNode* node);

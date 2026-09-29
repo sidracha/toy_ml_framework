@@ -300,3 +300,38 @@ void BIAS_ADD_2D_1D_backward(TensorNode* node) {
 	}
 }
 
+
+void transpose_backward(TensorNode* node) {
+
+	TensorNode* A = node->predecessors[0].get();
+
+	int dim = node->dim();
+	int index_N = dim - 2;
+	int index_M = dim - 1;
+	int input_N = node->shape[index_N];
+	int input_M = node->shape[index_M];
+
+	std::vector<int> input_stride = node->stride;
+	std::vector<int> output_stride = A->stride;
+	bool exists_next = true;
+
+	std::vector<int> odometer;
+	for (int i=0; i<dim-2; i++) odometer.push_back(0);
+
+	while (exists_next) {
+		// now iterate through all of the indexes
+		// of the last 2 indexes...
+		// and we calculate it
+		int offset = calculate_offset(odometer, input_stride);
+		for (int i=0; i<input_N; i++) {
+			for (int j=0; j<input_M; j++) {
+				int input_index = offset + i * input_stride[index_N] + j * input_stride[index_M];
+				int output_index = offset + j * output_stride[index_N] + i * output_stride[index_M];
+
+				A->grad[output_index] += node->grad[input_index];
+
+			}
+		}
+		exists_next = bool_odometer_next(odometer, node->shape);
+	}
+}

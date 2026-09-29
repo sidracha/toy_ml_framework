@@ -49,3 +49,50 @@ public:
 	LinearSigmoid (int _N, int _M) : Linear(_N, _M) {}	
 	Tensor forward(Tensor t) override;
 };
+
+
+class MLP : public Model {
+public:
+	std::vector<std::unique_ptr<Layer>> layers;
+	int input_dim;
+	int output_dim;
+	int depth;
+	int mlp_ratio;
+	std::function<Tensor(const Tensor&)> activation_fn;
+
+	MLP(int _input_dim, int _output_dim, int _depth, int _mlp_ratio, std::function<Tensor(const Tensor&)> _activation_fn) : 
+		Model(),
+		input_dim(_input_dim),
+		output_dim(_output_dim),
+		depth(_depth),
+		mlp_ratio(_mlp_ratio),
+		activation_fn(_activation_fn){
+		
+
+		for (int i=0; i<depth; i++) {
+		
+			if (i == 0) layers.push_back(std::make_unique<Linear>(input_dim, mlp_ratio*input_dim));
+			else if (i == depth-1) layers.push_back(std::make_unique<Linear>(mlp_ratio*input_dim, output_dim));
+			else layers.push_back(std::make_unique<Linear>(mlp_ratio*input_dim, mlp_ratio*input_dim));
+		}
+
+	}
+
+	Tensor forward(Tensor t) {
+		
+		// add the activation in the middle
+		// but not at the end
+		for (int i=0; i<depth; i++) {
+			t = layers[i]->forward(t);
+			
+			if (i < depth-1) t = activation_fn(t); 
+		}
+		return t;
+
+	}
+	
+	std::vector<std::unique_ptr<Layer>>& get_layers() {
+		return layers;
+	}
+
+};

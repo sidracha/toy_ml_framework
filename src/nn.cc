@@ -168,3 +168,212 @@ void softmax_backward(TensorNode* node) {
 	}
 
 }
+
+// we want a concat operation here.
+// this will take in a vector of tensors...
+// how do we concat across a dim? 
+// we basically write the rest of the ones in appropriately
+// and then we do a loop iteration when 
+// we get into the dim that we care about....
+// and the odometer will be all of the other dims...
+bool check_concat_dims(const Tensor& t1, const Tensor& t2, int dim) {
+	std::vector<int> shape1 = t1.shape();
+	std::vector<int> shape2 = t2.shape();
+	if (shape1.size() != shape2.size()) return false;
+	for (int i=0; i<shape1.size(); i++) {
+		if (i == dim) continue;
+		if (shape1[i] != shape2[i]) return false;
+	}
+	return true;
+}
+
+bool odometer_next_concat(
+		std::vector<int>& odometer,
+		std::vector<int>& shape,
+		std::vector<int>& index_map) {
+	
+	// we have the index to the corresponding one... we 
+	// want to skip over the concat_dim dimension
+	// to calculate it
+	
+	if (odometer.size() == 0) return false;
+	
+	int carry = 0;
+	bool first = false;
+	for (int i=odometer.size()-1; i>=0; i--) {
+		if (!first) { // add one to the first one
+			odometer[i]++;
+			first = true;
+		}
+		odometer[i] += carry;
+		int shape_index = index_map[i];
+		int dig = (odometer[i] % shape[shape_index]);
+		carry = (odometer[i] / shape[shape_index]);
+		odometer[i] = dig;
+		if (carry == 0) break;
+	}
+	if (carry > 0) return false;
+	return true;
+	// now we modified the odometer
+	// now we want to use the index map to
+	// go to the correct stride and stuff
+	
+}
+
+int calculate_offset(
+		std::vector<int>& odometer,
+		std::vector<int>& stride,
+		std::vector<int>& index_map) {
+	
+	int ret_index = 0;
+	for (int i=0; i<odometer.size(); i++) {
+		int stride_index = index_map[i];
+		ret_index += odometer[i] * stride[stride_index];
+	}
+	return ret_index;
+
+}
+
+Tensor concat(const std::vector<Tensor>& array, int concat_dim) {
+
+	// basically just reutn utself/noop if its
+	// concat with 1, dont even add to ghte graph
+	if (array.size() == 1) return array[0]; 
+	
+	//calculate the shape... and we can also calculate the stride
+	// ok the dims have to match everywhere except for the dimension of the 
+	// dim...
+	for (int i=1; i<array.size(); i++) {
+		if (!check_concat_dims(array[i], array[i-1], concat_dim)) {
+			throw std::runtime_error("Cannot concatenate all the tensor shapes dont match up");
+		}
+	}
+	// the final shape is the addition across all of those dims,
+	// and the rest of the shapes is the same
+	int final_dim = 0;
+	for (const auto& t : array) {
+		final_dim += t.shape()[concat_dim];
+	}
+
+
+	// create the strides and the shapes
+	std::vector<int> output_shape = array[0].shape();
+	int dim = output_shape.size();
+	output_shape[concat_dim] = final_dim;
+	std::vector<int> output_stride(dim);
+	output_stride[dim-1] = 1;
+	for (int i=dim-2; i>=0; i--) output_stride[i] = output_stride[i+1] * output_shape[i+1];
+	
+	// okk we create the output buffer here... easy peasy
+	int total_values = 1;
+	for (int i=0; i<dim; i++) total_values *= output_shape[i];
+
+	std::vector<double> output(total_values);
+	
+	// now do the unordered map odometer BS, resolve 
+	// the indivual dims for each one but
+	// we verified that the shapes/dims are all equal
+	// so we iterate from the first one.. over its dim size...
+	// so we have the odometer... for each position of the odometer offset 
+	// we want to write in all the values of that dim ok easy enough
+	
+	std::vector<int> odometer;
+	std::vector<int> index_map;
+	for (int i=0; i<dim; i++) {
+		if (i == concat_dim) continue;
+		odometer.push_back(0);
+		index_map.push_back(i);
+	}
+	
+	// now iterate over the odometer, then iterate over the array writing the values
+	// in appropriately...
+	// we have to probably keep track of the odometer offset globally since 
+	// we enforce that the shape is the same...
+	// ah fuck the stride ok wahtever ignore for now
+	
+	
+	bool next_exists = true;
+	while (next_exists) {
+		// now iterate through it
+		int output_dim_offset = 0;
+		for (const auto& t : array) {
+			int concat_dim_size = t.shape()[concat_dim];
+			std::vector<int> input_stride = t.stride();
+			
+			for (int i=0; i<concat_dim_size; i++) {
+					
+				// find the input offset
+				
+				int input_index = i * input_stride[concat_dim] + calculate_offset(odometer, input_stride, index_map);
+				int output_index = output_dim_offset * output_stride[concat_dim] + calculate_offset(odometer, output_stride, index_map);
+
+				output[output_index] = t.tensor_node->data[input_index];
+				
+				//increase the write position after every one
+				output_dim_offset++;
+			}
+
+		}
+		next_exists = odometer_next_concat(odometer, output_shape, index_map);
+	}
+	
+	// now make the output node
+	std::vector<std::shared_ptr<TensorNode>> predecessors;
+	for (auto& t : array) predecessors.push_back(t.tensor_node);
+
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, output_shape, predecessors, concat_backward);
+	node->concat_dim = concat_dim;	
+
+	return Tensor(node);
+
+}
+
+
+void concat_backward(TensorNode* node) {
+	
+	// we KNOW The  predecessors
+	// just recreate it....
+	
+	int dim = node->dim();
+	int concat_dim = node->concat_dim;
+	
+	std::vector<int> odometer;
+	std::vector<int> index_map;
+	for (int i=0; i<dim; i++) {
+		if (i == concat_dim) continue;
+		odometer.push_back(0);
+		index_map.push_back(i);
+	}
+	
+	std::vector<int> output_shape = node->shape;
+	std::vector<int> output_stride = node->stride;
+
+	bool next_exists = true;
+	while (next_exists) {
+		// now iterate through it
+		int output_dim_offset = 0;
+		for (const auto& t: node->predecessors) {
+			int concat_dim_size = t->shape[concat_dim];
+			std::vector<int> input_stride = t->stride;
+			
+			for (int i=0; i<concat_dim_size; i++) {
+					
+				// find the input offset
+				
+				int input_index = i * input_stride[concat_dim] + calculate_offset(odometer, input_stride, index_map);
+				int output_index = output_dim_offset * output_stride[concat_dim] + calculate_offset(odometer, output_stride, index_map);
+
+				// write back in the proper value
+				t->grad[input_index] += node->grad[output_index];
+
+				//increase the write position after every one
+				output_dim_offset++;
+			}
+
+		}
+		next_exists = odometer_next_concat(odometer, output_shape, index_map);
+	}
+
+
+}

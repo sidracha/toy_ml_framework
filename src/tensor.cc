@@ -316,6 +316,95 @@ Tensor Tensor::BIAS_ADD_2D_1D(const Tensor& bias) const {
 
 }
 
+bool bool_odometer_next(std::vector<int>& odometer, const std::vector<int>& shape) {
+	if (odometer.size() == 0) return false;
+
+	
+	int carry = 0;
+	bool first = false;
+	for (int i=odometer.size()-1; i>=0; i--) {
+		if (!first) { // add one to the first one
+			odometer[i]++;
+			first = true;
+		}
+		odometer[i] += carry;
+		int dig = (odometer[i] % shape[i]);
+		carry = (odometer[i] / shape[i]);
+		odometer[i] = dig;
+		if (carry == 0) break;
+	}
+	if (carry > 0) return false;
+	return true;
+}
+
+int calculate_offset(
+		const std::vector<int>& odometer,
+		const std::vector<int>& stride) {
+	
+	int ret_index = 0;
+	for (int i=0; i<odometer.size(); i++) {
+		ret_index += odometer[i] * stride[i];
+	}
+	return ret_index;
+
+}
+
+Tensor transpose(const Tensor& t) {
+	
+	// transpose the last 2 dimensions across the batch
+	int dim = t.dim();
+	if (dim < 2) throw std::runtime_error("transpose called on dim < 2");
+	int index_N = dim - 2;
+	int index_M = dim - 1;
+		
+	std::vector<int> odometer;
+	std::vector<int> output_shape;
+	for (int i=0; i<dim-2; i++) {
+		odometer.push_back(0);
+		output_shape.push_back(t.tensor_node->shape[i]);
+	}
+	
+	int input_N = t.tensor_node->shape[index_N];
+	int input_M = t.tensor_node->shape[index_M];
+	int output_N = input_M;
+	int output_M = input_N;
+	output_shape.push_back(output_N);
+	output_shape.push_back(output_M);
+	std::vector<int> output_stride(dim);
+	output_stride[dim-1] = 1;
+	for (int i=dim-2; i>=0; i--) output_stride[i] = output_stride[i+1] * output_shape[i+1]; 
+		
+	
+	std::vector<double> output(t.tensor_node->data.size());
+	
+	// keep going as long as the odometers are the same...
+	// should be the same since its the same basically.. yeah
+	// we have to add the same amounts so whatever
+	int exists_next = true;
+	while (exists_next) {
+		// now iterate through all of the indexes 
+		// of the last 2 indexes...
+		// and we calculate it
+		int offset = calculate_offset(odometer, t.tensor_node->stride);
+		for (int i=0; i<input_N; i++) {
+			for (int j=0; j<input_M; j++) {
+				int input_index = offset + i * t.tensor_node->stride[index_N] + j * t.tensor_node->stride[index_M];
+				int output_index = offset + j * output_stride[index_N] + i * output_stride[index_M];
+
+				output[output_index] = t.tensor_node->data[input_index];
+
+			}
+		}
+		std::vector<int> t_shape = t.shape();
+		exists_next = bool_odometer_next(odometer, t_shape);
+	}
+
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, output_shape, {t.tensor_node}, transpose_backward);
+
+	return Tensor(node);
+}
+
 
 void Tensor::backward(bool retain_graph) {
 
