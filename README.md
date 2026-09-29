@@ -3,6 +3,7 @@ basic toy framework works
 code implemented by hand in a weekend for fun n learning
 
 Parts that work:
+- Multi head attention layer w/ MLP
 - add/mult/div/sub
 - GEMM2D and Bias add
 - Sigmoid
@@ -25,7 +26,7 @@ TODO (in order of priority):
 - some sort of list of params that optimizer holds that can iterate through
 - (DONE) add 3D batched tensors
 - work with general tensor shapes in MSELoss
-- add Model class custom forward methods
+- (DONE) add Model class custom forward methods
 - Xavier initialization
 - Add single ReLU backward
 - Add other activation functions
