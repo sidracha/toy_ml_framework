@@ -90,6 +90,14 @@ public:
 		return t;
 
 	}
+
+	void zero_grad() {
+		for (const auto& layer : layers) layer->zero_grad();
+	}
+
+	void gradient_descent_step(double lr) {
+		for (const auto& layer : layers) layer->gradient_descent_step(lr);
+	} 
 	
 	std::vector<std::unique_ptr<Layer>>& get_layers() {
 		return layers;

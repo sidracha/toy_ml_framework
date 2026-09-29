@@ -46,10 +46,11 @@ public:
 
 };
 
-class Model {
+class Model : public Layer {
 public:
+	std::vector<std::unique_ptr<Layer>> layers;
 	Model() {};
 	
-	virtual Tensor forward(Tensor t) = 0;
 	virtual std::vector<std::unique_ptr<Layer>>& get_layers() = 0;
+
 };
