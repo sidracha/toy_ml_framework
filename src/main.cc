@@ -33,7 +33,7 @@ int main () {
 	optimizer.step();
 
 	MLP mlp(1, 1, 4, 32, Sigmoid); 
-	train_fn(mlp);
+	train_fn();
 	return 0;
 	
 }

@@ -89,10 +89,18 @@ Tensor softmax(const Tensor& t) {
 		// i guess we get the index offset here,
 		// thennnn we do the actual softmax here... by iterating i through 
 		// all the row elements and write into the output at the end
+		
+		// do the log sum exp trick
+		double m = std::numeric_limits<double>::lowest();
+		for (int i=0; i<N; i++) {
+			int data_index = odometer_index + i * stride[N_index];
+			m = std::max(m, t.tensor_node->data[data_index]);
+		}
+		
 		double e_sum = 0.0;
 		for (int i=0; i<N; i++) {
 			int data_index = odometer_index + i * stride[N_index];
-			e_sum += std::exp(t.tensor_node->data[data_index]);	
+			e_sum += std::exp(t.tensor_node->data[data_index] - m);	
 		}
 
 		// ok so we got the toal one, now we should calculate the per-
@@ -100,7 +108,7 @@ Tensor softmax(const Tensor& t) {
 
 		for (int i=0; i<N; i++) {
 			int data_index = odometer_index + i * stride[N_index];
-			output[data_index] = std::exp(t.tensor_node->data[data_index]) / e_sum;
+			output[data_index] = std::exp(t.tensor_node->data[data_index] - m) / e_sum;
 		}
 	
 		odometer_index = odometer_next(odometer, shape, stride);

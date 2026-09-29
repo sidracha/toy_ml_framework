@@ -11,8 +11,8 @@
 class Linear : public Layer {
 public:
 
-	double DIST_MIN = -0.5;
-	double DIST_MAX = 0.5;
+	double DIST_MIN = -0.1;
+	double DIST_MAX = 0.1;
 	int N;
 	int M;
 	Tensor weight;
