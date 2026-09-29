@@ -72,7 +72,7 @@ Tensor create_input_random(int batch_size) {
 }
 
 //lets train a simple predictor of sine and lets batch it
-void train_fn(Model& model) {
+void train_fn(Layer& model) {
 	
 	// weve already created the model and it has a forward method
 	// we can just first create random tensors its fine... they will be our batch fn....

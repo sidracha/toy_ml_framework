@@ -88,4 +88,8 @@ void SelfAttn::gradient_descent_step(double lr) {
 }
 
 
+Tensor SelfAttnBlock::forward(Tensor t) {
+	t = attn->forward(t);
+	t = mlp->forward(t);
+}
 

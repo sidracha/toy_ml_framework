@@ -51,9 +51,8 @@ public:
 };
 
 
-class MLP : public Model {
+class MLP : public Layer {
 public:
-	std::vector<std::unique_ptr<Layer>> layers;
 	int input_dim;
 	int output_dim;
 	int depth;
@@ -61,7 +60,7 @@ public:
 	std::function<Tensor(const Tensor&)> activation_fn;
 
 	MLP(int _input_dim, int _output_dim, int _depth, int _mlp_ratio, std::function<Tensor(const Tensor&)> _activation_fn) : 
-		Model(),
+		Layer(),
 		input_dim(_input_dim),
 		output_dim(_output_dim),
 		depth(_depth),
