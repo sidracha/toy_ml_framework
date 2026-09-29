@@ -26,9 +26,11 @@ SelfAttn::SelfAttn(int _num_heads, int _embed_dim) {
 
 		// uhh ok so we want to embed each of htem then do the matmuls and the
 		// transposes and shit
-		wq.push_back(dynamic_cast<Linear*>(layers[0].get()));
-		wk.push_back(dynamic_cast<Linear*>(layers[1].get()));
-		wv.push_back(dynamic_cast<Linear*>(layers[2].get()));
+		
+		int base = i * 3;
+		wq.push_back(dynamic_cast<Linear*>(layers[base].get()));
+		wk.push_back(dynamic_cast<Linear*>(layers[base+1].get()));
+		wv.push_back(dynamic_cast<Linear*>(layers[base+2].get()));
 
 	}
 	
