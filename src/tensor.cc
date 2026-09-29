@@ -1,6 +1,7 @@
 #include "tensor.h"
 #include "calc.h"
 #include "tensor_grad.h"
+#include "utils.h"
 
 #include <vector>
 #include <deque>
@@ -125,13 +126,28 @@ int Tensor::linearize_index(const std::vector<int>& index) {
 	return tensor_node->linearize_index(index);
 }
 
-// ADD 
+// ADD with broadcasting (this is always the bigger tensor)
 Tensor Tensor::operator+(const Tensor& other) const {
-	check_shapes_are_same(other);
+	std::vector<int> shape_a = shape();
+	std::vector<int> shape_b = other.shape();
+	std::vector<int> stride_a = stride();
+	std::vector<int> stride_b = other.stride();
+
+	int dim_diff = shape_a.size() - shape_b.size();
+	for (int i = 0; i < dim_diff; i++) { shape_b.insert(shape_b.begin(), 1); stride_b.insert(stride_b.begin(), 0); }
+
 	std::vector<double> output(tensor_node->data.size());
-	for (int i=0; i<tensor_node->data.size(); i++) output[i] = tensor_node->data[i] + other.tensor_node->data[i];
+	std::vector<int> odometer(shape_a.size(), 0);
+	int odometer_index = 0;
+
+	while (odometer_index >= 0) {
+		int idx_b = calculate_offset_broadcast(odometer, stride_b, shape_b);
+		output[odometer_index] = tensor_node->data[odometer_index] + other.tensor_node->data[idx_b];
+		odometer_index = odometer_next(odometer, shape_a, stride_a);
+	}
+
 	std::shared_ptr<TensorNode> node = make_operator_output_node(
-		output, shape(), {tensor_node, other.tensor_node}, add_backward);
+		output, shape_a, {tensor_node, other.tensor_node}, add_backward);
 	return Tensor(node);
 }
 

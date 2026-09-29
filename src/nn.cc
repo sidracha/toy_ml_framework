@@ -1,6 +1,7 @@
 #include "nn.h"
 #include "tensor.h"
 #include "calc.h"
+#include "utils.h"
 
 #include <cmath>
 // ReLU is an operation and should return a Tensor, we also have to calculate the backward pass..
@@ -195,52 +196,6 @@ bool check_concat_dims(const Tensor& t1, const Tensor& t2, int dim) {
 	return true;
 }
 
-bool odometer_next_concat(
-		std::vector<int>& odometer,
-		std::vector<int>& shape,
-		std::vector<int>& index_map) {
-	
-	// we have the index to the corresponding one... we 
-	// want to skip over the concat_dim dimension
-	// to calculate it
-	
-	if (odometer.size() == 0) return false;
-	
-	int carry = 0;
-	bool first = false;
-	for (int i=odometer.size()-1; i>=0; i--) {
-		if (!first) { // add one to the first one
-			odometer[i]++;
-			first = true;
-		}
-		odometer[i] += carry;
-		int shape_index = index_map[i];
-		int dig = (odometer[i] % shape[shape_index]);
-		carry = (odometer[i] / shape[shape_index]);
-		odometer[i] = dig;
-		if (carry == 0) break;
-	}
-	if (carry > 0) return false;
-	return true;
-	// now we modified the odometer
-	// now we want to use the index map to
-	// go to the correct stride and stuff
-	
-}
-
-int calculate_offset(
-		std::vector<int>& odometer,
-		std::vector<int>& stride,
-		std::vector<int>& index_map) {
-	
-	int ret_index = 0;
-	for (int i=0; i<odometer.size(); i++) {
-		int stride_index = index_map[i];
-		ret_index += odometer[i] * stride[stride_index];
-	}
-	return ret_index;
-
-}
 
 Tensor concat(const std::vector<Tensor>& array, int concat_dim) {
 
@@ -322,7 +277,7 @@ Tensor concat(const std::vector<Tensor>& array, int concat_dim) {
 			}
 
 		}
-		next_exists = odometer_next_concat(odometer, output_shape, index_map);
+		next_exists = odometer_next_mapped(odometer, output_shape, index_map);
 	}
 	
 	// now make the output node
@@ -380,7 +335,7 @@ void concat_backward(TensorNode* node) {
 			}
 
 		}
-		next_exists = odometer_next_concat(odometer, output_shape, index_map);
+		next_exists = odometer_next_mapped(odometer, output_shape, index_map);
 	}
 
 

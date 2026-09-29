@@ -1,50 +1,9 @@
 #include "modules.h"
 #include "tensor.h"
+#include "utils.h"
 #include <unordered_set>
 
 void layer_norm_backward(TensorNode* Y);
-
-
-static bool odometer_next (
-		std::vector<int>& odometer,
-		std::vector<int>& shape,
-		std::vector<int>& index_map) {
-	
-	if (odometer.size() == 0) return false;
-	
-	int carry = 0;
-	bool first = false;
-	for (int i=odometer.size()-1; i>=0; i--) {
-		if (!first) { // add one to the first one
-			odometer[i]++;
-			first = true;
-		}
-		odometer[i] += carry;
-		int shape_index = index_map[i];
-		int dig = (odometer[i] % shape[shape_index]);
-		carry = (odometer[i] / shape[shape_index]);
-		odometer[i] = dig;
-		if (carry == 0) break;
-	}
-	if (carry > 0) return false;
-	return true;
-
-}
-
-
-static int calculate_offset(
-		std::vector<int>& odometer,
-		std::vector<int>& stride,
-		std::vector<int>& index_map) {
-	
-	int ret_index = 0;
-	for (int i=0; i<odometer.size(); i++) {
-		int stride_index = index_map[i];
-		ret_index += odometer[i] * stride[stride_index];
-	}
-	return ret_index;
-
-}
 
 
 
@@ -91,7 +50,7 @@ Tensor LayerNorm::forward(Tensor t) {
 			// use the running average formula
 			N++;
 			mean = mean + (t.tensor_node->data[index] - mean) / N;
-			normalize_next_exists = odometer_next(normalize_odometer, shape, normalize_dims);
+			normalize_next_exists = odometer_next_mapped(normalize_odometer, shape, normalize_dims);
 		}		
 	
 		for (int i=0; i<normalize_odometer.size(); i++) normalize_odometer[i] = 0;
@@ -107,7 +66,7 @@ Tensor LayerNorm::forward(Tensor t) {
 			double diff = (t.tensor_node->data[index] - mean);
 			VN++;
 			variance = variance + (diff*diff - variance) / VN;
-			normalize_next_exists = odometer_next(normalize_odometer, shape, normalize_dims);
+			normalize_next_exists = odometer_next_mapped(normalize_odometer, shape, normalize_dims);
 		}		
 		
 		for (int i=0; i<normalize_odometer.size(); i++) normalize_odometer[i] = 0;
@@ -123,9 +82,9 @@ Tensor LayerNorm::forward(Tensor t) {
 			double x = t.tensor_node->data[index];
 			output[index] = ((x-mean) / std::sqrt(variance + eps)) * gamma.data_at(gamma_offset) + beta.data_at(gamma_offset);
 
-			normalize_next_exists = odometer_next(normalize_odometer, shape, normalize_dims);
+			normalize_next_exists = odometer_next_mapped(normalize_odometer, shape, normalize_dims);
 		}
-		next_exists = odometer_next(odometer, shape, index_map_odometer);
+		next_exists = odometer_next_mapped(odometer, shape, index_map_odometer);
 
 	}
 
@@ -208,7 +167,7 @@ void layer_norm_backward(TensorNode* Y) {
 			double h = Y->grad[index] * gamma->data[gamma_offset];
 			term1 += h;
 
-			normalize_next_exists = odometer_next(normalize_odometer, shape, normalize_dims);
+			normalize_next_exists = odometer_next_mapped(normalize_odometer, shape, normalize_dims);
 		}
 		
 		for (int i=0; i<normalize_odometer.size(); i++) normalize_odometer[i] = 0;
@@ -232,7 +191,7 @@ void layer_norm_backward(TensorNode* Y) {
 			double h = Y->grad[index] * gamma->data[gamma_offset];
 			term1 += h;
 			term2 += h * (X->data[index] - mean);
-			normalize_next_exists = odometer_next(normalize_odometer, shape, normalize_dims);
+			normalize_next_exists = odometer_next_mapped(normalize_odometer, shape, normalize_dims);
 		}
 
 		for (int i=0; i<normalize_odometer.size(); i++) normalize_odometer[i] = 0;
@@ -264,11 +223,11 @@ void layer_norm_backward(TensorNode* Y) {
 			X->grad[index] += dLdxi;
 			gamma->grad[gamma_offset] += dgamma;
 			beta->grad[gamma_offset] += dbeta;
-			normalize_next_exists = odometer_next(normalize_odometer, shape, normalize_dims);
+			normalize_next_exists = odometer_next_mapped(normalize_odometer, shape, normalize_dims);
 
 		}
 
-		next_exists = odometer_next(odometer, shape, index_map_odometer);
+		next_exists = odometer_next_mapped(odometer, shape, index_map_odometer);
 	}
 
 }

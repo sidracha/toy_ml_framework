@@ -1,3 +1,4 @@
+#include "utils.h"
 #include <vector>
 #include <stdexcept>
 #include <format>
@@ -12,34 +13,6 @@ int linearize_index(const std::vector<int>& index, const std::vector<int>& strid
 
 inline int calc_batch_size(const std::vector<int>& shape) {
 	return (shape.size() == 3) ? shape[0] : 1;
-}
-
-int odometer_next(
-		std::vector<int>& odometer, 
-		const std::vector<int>& shape, 
-		const std::vector<int>& stride) {
-	
-
-	// if ever it gets more than the actual shape, we want to modify the odometer
-	// if the carry at the end we want to return -1
-	
-	int n = odometer.size();
-	if (n == 0) return -1;
-	int carry = 1;
-	int index = 0;
-	
-
-	for (int i=n-1; i>=0; i--) {
-		int sum = odometer[i] + carry;
-		int remainder = sum % shape[i];
-		carry = sum / shape[i];
-		odometer[i] = remainder;
-		index += (odometer[i] * stride[i]);
-	}
-
-	if (carry > 0) return -1;
-	else return index;
-
 }
 
 // cpu GEMM kernel lol
