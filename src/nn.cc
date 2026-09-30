@@ -364,7 +364,7 @@ Tensor fixed_sincos_pos_embed(const Tensor& t, int embed_dim) {
 	
 	for (int pos=0; pos<N; pos++) {
 		for (int i=0; i<M; i++) {
-			double exponent = (2*i) / static_cast<double>(embed_dim);
+			double exponent = (2 * (i / 2)) / static_cast<double>(embed_dim);
 			double inner = pos / std::pow(10000, exponent);
 
 			// basically because stride = [M, 1];
