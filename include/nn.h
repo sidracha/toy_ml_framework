@@ -16,3 +16,7 @@ Tensor concat(const std::vector<Tensor>& array, int concat_dim);
 void concat_backward(TensorNode* node);
 
 Tensor fixed_sincos_pos_embed(const Tensor& t, int embed_dim);
+
+double tanh(double x);
+Tensor Tanh(const Tensor& t);
+void Tanh_backward(TensorNode* node);

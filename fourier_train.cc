@@ -14,10 +14,10 @@
 #include <cmath>
 #include <matplot/matplot.h>
 
-#define B 2
-#define NUM_FREQS 3
+#define B 4
+#define NUM_FREQS 5
 
-double signal_fn(double t, const std::vector<int>& freqs, const std::vector<double>& amps) {
+double signal_fn(double t, const std::vector<double>& freqs, const std::vector<double>& amps) {
 	double val = 0.0;
 	for (int i = 0; i < freqs.size(); i++) {
 		val += amps[i] * std::sin(freqs[i] * t);
@@ -101,12 +101,12 @@ Tensor create_input_tensor(int N) {
 
 	std::random_device rd;
 	std::mt19937 gen(rd());
-	std::uniform_int_distribution<int> freq_dist(1, N/2 - 1);
+	std::uniform_real_distribution<double> freq_dist(0.5, N/2 - 0.5);
 	std::uniform_real_distribution<double> amp_dist(0.5, 1.5);
 
 	for (int b=0; b<B; b++) {
 
-		std::vector<int> freqs(NUM_FREQS);
+		std::vector<double> freqs(NUM_FREQS);
 		std::vector<double> amps(NUM_FREQS);
 		for (int f = 0; f < NUM_FREQS; f++) {
 			freqs[f] = freq_dist(gen);
@@ -181,20 +181,20 @@ void fft_train_loop() {
 	// so we will have some shape of 
 	// {B, N, 2}
 	// which will go into our transformer
-	int num_blocks = 4;
-	int num_heads = 4;
-	int embed_dim = 16;
+	int num_blocks = 8;
+	int num_heads = 2;
+	int embed_dim = 8;
 	int input_embed_dim = 1;
 	int output_embed_dim = 2;
 	int mlp_ratio = 2;
 	auto identity = [](const Tensor& t) { return t; };
-	Transformer model(num_blocks, num_heads, embed_dim, input_embed_dim, output_embed_dim, mlp_ratio, identity);
+	Transformer model(num_blocks, num_heads, embed_dim, input_embed_dim, output_embed_dim, mlp_ratio, Tanh);
 	
-	double lr = 0.8;
-	double lr_scale = 0.99997;
+	double lr = 0.7;
+	double lr_scale = 0.99998;
 	Optimizer optimizer(model.layers, lr);
 
-	int NUM_ITERATIONS = 40000;
+	int NUM_ITERATIONS = 100000;
 	int LOG_INTERVAL = NUM_ITERATIONS / 100;
 	std::vector<double> loss_history;
 

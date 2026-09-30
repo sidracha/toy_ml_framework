@@ -43,7 +43,8 @@ Tensor Sigmoid (const Tensor& t) {
 	// create the output node
 	std::shared_ptr<TensorNode> node = make_operator_output_node(
 										data, 
-										t.shape(), 
+										t.shape(),
+										t.stride(),
 										{t.tensor_node}, 
 										Sigmoid_backward);
 	
@@ -388,5 +389,36 @@ Tensor fixed_sincos_pos_embed(const Tensor& t, int embed_dim) {
 	// now use the broadcast add we just iplemented
 	Tensor out = t + posembed_tensor;
 	return out;
+
+}
+
+
+// just a pointwise so we gucci
+Tensor Tanh(const Tensor& t) {
+	
+	int N = t.tensor_node->data.size();
+	std::vector<double> output(N);
+
+	for (int i=0; i<N; i++) {
+		output[i] = std::tanh(t.tensor_node->data[i]);
+	}
+	
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		output, t.shape(), t.stride(), {t.tensor_node}, Tanh_backward);
+	
+	return Tensor(node);
+
+}
+
+// d/dx tanh(x) = 1 - tanh^2(x)
+
+void Tanh_backward(TensorNode* node) {
+	
+	TensorNode* X = node->predecessors[0].get();
+
+	for (int i=0; i<node->data.size(); i++) {
+		double ddx = 1 - (node->data[i] * node->data[i]);
+		X->grad[i] += node->grad[i] * ddx; 
+	}
 
 }
