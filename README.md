@@ -1,6 +1,6 @@
 basic toy framework works
 
-implemented BY HAND from first principles, design not based on anything
+implemented BY HAND in a few days from first principles, design not based on anything
 
 Since ive "had experience" with Pytorch mostly, the workflow is the same: input, loss, optimizer, zero_grad etc,
 but the underlying framework is different 
