@@ -75,7 +75,8 @@ public:
 	// sequence length and path dont matter
 	Transformer(
 			int _num_blocks, 
-			int _num_heads, int _embed_dim, int _input_embed_dim, 
+			int _num_heads, 
+			int _embed_dim, int _input_embed_dim, int _output_embed_dim, 
 			int _mlp_ratio, 
 			std::function<Tensor(const Tensor&)> _activation_fn) : embed_dim(_embed_dim) {
 		
@@ -90,7 +91,7 @@ public:
 		}
 
 		// now the output
-		layers.push_back(std::make_unique<MLP>(_embed_dim, _input_embed_dim, 2, _mlp_ratio, _activation_fn));
+		layers.push_back(std::make_unique<MLP>(_embed_dim, _output_embed_dim, 2, _mlp_ratio, _activation_fn));
 		output_embed = dynamic_cast<MLP*>(layers[layers.size()-1].get());
 	
 	}
