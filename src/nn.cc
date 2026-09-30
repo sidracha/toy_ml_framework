@@ -341,3 +341,52 @@ void concat_backward(TensorNode* node) {
 
 }
 
+// uhh basically just add the 2D matrix to it...
+// just create another tensor and add it
+// and we basically get if for free type....
+// we dont even need a backward actually!
+Tensor fixed_sincos_pos_embed(const Tensor& t, int embed_dim) {
+	
+	std::vector<int> t_shape = t.shape();
+	int tdim = t.dim();
+	int N = t_shape[tdim-2];
+	int M = t_shape[tdim-1];
+	std::vector<int> pos_embed_shape = {N, M};
+
+	// now make the tensor node and write in the mask into it
+	std::vector<double> posembed_mask(N*M);
+	
+	// so PE_even = sin(pos/(10000^(2i/d)))
+	// where d is the embedding dimension of the block
+	// i is the position in the last vector of it 
+	// pos is the token index...
+	// so when we iterate over N (the rows) this will be the pos
+	
+	for (int pos=0; pos<N; pos++) {
+		for (int i=0; i<M; i++) {
+			double exponent = (2*i) / static_cast<double>(embed_dim);
+			double inner = pos / std::pow(10000, exponent);
+
+			// basically because stride = [M, 1];
+			int index = pos * M + i;
+			
+			if (i % 2 == 0) posembed_mask[index] = sin(inner);
+			else posembed_mask[index] = cos(inner);
+			
+		}
+	}
+
+	// create the tensor node here we not gonna do
+	// backprop on this so just leave predecessors and backward fn to 
+	// null
+	std::shared_ptr<TensorNode> posembed_node = make_operator_output_node(
+		posembed_mask, {N, M}, {}, nullptr);
+	
+	// wrap this in the tensor so we can do the add
+	Tensor posembed_tensor(posembed_node);
+	
+	// now use the broadcast add we just iplemented
+	Tensor out = t + posembed_tensor;
+	return out;
+
+}

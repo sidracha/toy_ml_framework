@@ -45,6 +45,7 @@
 #include "losses.h"
 #include "linear.h"
 #include "calc.h"
+#include "utils.h"
 
 
 // THE BACKWARD PASS FOR EACH OPERATOR ON THE TENSOR
@@ -66,11 +67,24 @@ void add_backward(TensorNode* node) {
 
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
+	
+	std::vector<int> shape_a = a->shape;
+	std::vector<int> shape_b = b->shape;
+	std::vector<int> stride_a = a->stride;
+	std::vector<int> stride_b = b->stride;
 
-	for (int i=0; i<node->grad.size(); i++) {
-		a->grad[i] += node->grad[i];
-		// for the scalar operations
-		if (i == 0 || b->data.size() > 1) b->grad[i] += node->grad[i];
+	int dim_diff = shape_a.size() - shape_b.size();
+	for (int i = 0; i < dim_diff; i++) { shape_b.insert(shape_b.begin(), 1); stride_b.insert(stride_b.begin(), 0); }
+
+	std::vector<int> odometer(shape_a.size(), 0);
+	int odometer_index = 0;
+
+	while (odometer_index >= 0) {
+		int b_index = calculate_offset_broadcast(odometer, stride_b, shape_b);
+		a->grad[odometer_index] += node->grad[odometer_index];
+		b->grad[b_index] += node->grad[odometer_index];
+		
+		odometer_index = odometer_next(odometer, shape_a, stride_a);
 	}
 
 }

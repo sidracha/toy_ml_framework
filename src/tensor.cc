@@ -141,8 +141,8 @@ Tensor Tensor::operator+(const Tensor& other) const {
 	int odometer_index = 0;
 
 	while (odometer_index >= 0) {
-		int idx_b = calculate_offset_broadcast(odometer, stride_b, shape_b);
-		output[odometer_index] = tensor_node->data[odometer_index] + other.tensor_node->data[idx_b];
+		int other_index = calculate_offset_broadcast(odometer, stride_b, shape_b);
+		output[odometer_index] = tensor_node->data[odometer_index] + other.tensor_node->data[other_index];
 		odometer_index = odometer_next(odometer, shape_a, stride_a);
 	}
 

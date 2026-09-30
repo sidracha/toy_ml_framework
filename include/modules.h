@@ -17,10 +17,10 @@ public:
 	
 	// ok so apparently gamma is supposed to be init to 1
 	// and beta is supposed to be init to 0 so whatever
-	LayerNorm(std::vector<int> _normalize_dims) :
+	LayerNorm(std::vector<int> _normalize_dims, std::vector<int> _dim_sizes) :
 		normalize_dims(_normalize_dims),
-		gamma(create_tensor_scalar(_normalize_dims, 1.0)),
-		beta(create_tensor_scalar(_normalize_dims, 0.0)) {}
+		gamma(create_tensor_scalar(_dim_sizes, 1.0)),
+		beta(create_tensor_scalar(_dim_sizes, 0.0)) {}
 	
 	Tensor forward(Tensor t);
 
