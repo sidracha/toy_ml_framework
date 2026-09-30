@@ -28,7 +28,7 @@ Parts that work:
 
 DFT predictor (iterations /40 is the loss scale, see fourier_train.cc)
   
-<img width="1301" height="392" alt="Screenshot 2026-09-29 at 10 10 39 PM" src="https://github.com/user-attachments/assets/605c2c61-f05a-4cbb-af4c-3bc13da8c1d3" />
+<img width="1300" height="393" alt="Screenshot 2026-09-30 at 11 01 42 AM" src="https://github.com/user-attachments/assets/f20c5ac2-67b5-46c3-b61d-0cfb145611c1" />
 
 TODO (in order of priority):
 - Optimizer holds params
