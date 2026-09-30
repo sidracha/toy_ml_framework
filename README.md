@@ -17,8 +17,7 @@ Parts that work:
 
 DFT predictor (iterations /40 is the loss scale, see fourier_train.cc)
   
-<img width="1311" height="397" alt="Screenshot 2026-09-29 at 9 53 27 PM" src="https://github.com/user-attachments/assets/f1214456-0644-4418-9d9a-b3f17e8a425a" />
-
+<img width="1301" height="392" alt="Screenshot 2026-09-29 at 10 10 39 PM" src="https://github.com/user-attachments/assets/605c2c61-f05a-4cbb-af4c-3bc13da8c1d3" />
 
 TODO (in order of priority):
 - GeLU
