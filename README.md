@@ -1,9 +1,10 @@
 basic toy framework works
 
-code implemented by hand in a weekend for fun n learning
+code implemented BY HAND in a few few days for fun n learning
 
 Parts that work:
-- Multi head attention layer w/ MLP
+- Multi headed self attention Full Transformer
+- Softmax/layernorm/MLP/qkv/concat
 - add/mult/div/sub
 - GEMM2D and Bias add
 - Sigmoid
@@ -14,13 +15,14 @@ Parts that work:
 - simple Tensor permutations/arbitrary shapes/sizes for tensor
 - simple FFN trains
 
-Sin predictor 10000 iterations
-Sigmoid except last 3 layers of 32
+DFT predictor (iterations /40 is the loss scale, see fourier_train.cc)
   
-<img width="525" height="394" alt="Screenshot 2026-09-25 at 11 38 16 PM" src="https://github.com/user-attachments/assets/7aadf235-208a-4ed3-b8a3-128c73c0f3cf" />
+<img width="1311" height="397" alt="Screenshot 2026-09-29 at 9 53 27 PM" src="https://github.com/user-attachments/assets/f1214456-0644-4418-9d9a-b3f17e8a425a" />
 
 
 TODO (in order of priority):
+- GeLU
+- Swish
 - (DONE) change make_operator_output_node function take a list of predecessors
 - (DONE) have Tensor be param by reference, dont copy tensor objects everywhere
 - some sort of list of params that optimizer holds that can iterate through
