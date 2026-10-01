@@ -94,36 +94,64 @@ void add_backward(TensorNode* node) {
 // dy/da = dx/da * dx/dy
 // dy/db = dx/db * dx/dy
 // dx/db = -1
+
 void sub_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
+	
+	std::vector<int> shape_a = a->shape;
+	std::vector<int> shape_b = b->shape;
+	std::vector<int> stride_a = a->stride;
+	std::vector<int> stride_b = b->stride;
 
-	for (int i=0; i<node->grad.size(); i++) {
-		a->grad[i] += node->grad[i];
-		if (i == 0 || b->data.size() > 1) b->grad[i] -= node->grad[i];
+	int dim_diff = shape_a.size() - shape_b.size();
+	for (int i = 0; i < dim_diff; i++) { shape_b.insert(shape_b.begin(), 1); stride_b.insert(stride_b.begin(), 0); }
+
+	std::vector<int> odometer(shape_a.size(), 0);
+	int odometer_index = 0;
+
+	while (odometer_index >= 0) {
+		int b_index = calculate_offset_broadcast(odometer, stride_b, shape_b);
+		a->grad[odometer_index] += node->grad[odometer_index];
+		b->grad[b_index] -= node->grad[odometer_index];
+		
+		odometer_index = odometer_next(odometer, shape_a, stride_a);
 	}
+
 }
+
 
 // x = ab
 // y = f(x)
 // dy/da = dy/dx * dx/da
 // dx = da = b
 // so += grad[node] * b
-
 void mult_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
 	
-	for (int i=0; i<node->grad.size(); i++) {
-		// bit ugly but we dont even care about b here 
-		int b_index = (b->data.size() == 1) ? 0 : i;
+	std::vector<int> shape_a = a->shape;
+	std::vector<int> shape_b = b->shape;
+	std::vector<int> stride_a = a->stride;
+	std::vector<int> stride_b = b->stride;
+
+	int dim_diff = shape_a.size() - shape_b.size();
+	for (int i = 0; i < dim_diff; i++) { shape_b.insert(shape_b.begin(), 1); stride_b.insert(stride_b.begin(), 0); }
+
+	std::vector<int> odometer(shape_a.size(), 0);
+	int odometer_index = 0;
+
+	while (odometer_index >= 0) {
+		int b_index = calculate_offset_broadcast(odometer, stride_b, shape_b);
 		
-		a->grad[i] += (node->grad[i] * b->data[b_index]);
-		b->grad[b_index] += (node->grad[i] * a->data[i]);
+		a->grad[odometer_index] += (node->grad[odometer_index] * b->data[b_index]);
+		b->grad[b_index] += (node->grad[odometer_index] * a->data[odometer_index]);
+		
+		odometer_index = odometer_next(odometer, shape_a, stride_a);
 	}
 
 }
@@ -131,20 +159,32 @@ void mult_backward(TensorNode* node) {
 // x = a/b
 // dx/da = 1/b
 // dx/db = -a/b^2
-
 void div_backward(TensorNode* node) {
 	verify_predecessor_size(node, 2);
 
 	TensorNode* a = node->predecessors[0].get();
 	TensorNode* b = node->predecessors[1].get();
+	
+	std::vector<int> shape_a = a->shape;
+	std::vector<int> shape_b = b->shape;
+	std::vector<int> stride_a = a->stride;
+	std::vector<int> stride_b = b->stride;
 
-	for (int i=0; i<node->grad.size(); i++) {
-		int b_index = (b->data.size() == 1) ? 0 : i;
-		double dda = 1/b->data[b_index];
-		double ddb = -a->data[i] / (b->data[b_index] * b->data[b_index]);
-		a->grad[i] += (node->grad[i] * dda);
-		b->grad[b_index] += (node->grad[i] * ddb);
+	int dim_diff = shape_a.size() - shape_b.size();
+	for (int i = 0; i < dim_diff; i++) { shape_b.insert(shape_b.begin(), 1); stride_b.insert(stride_b.begin(), 0); }
 
+	std::vector<int> odometer(shape_a.size(), 0);
+	int odometer_index = 0;
+
+	while (odometer_index >= 0) {
+		int b_index = calculate_offset_broadcast(odometer, stride_b, shape_b);
+		double dda = 1 / b->data[b_index];
+		double ddb = -a->data[odometer_index] / (b->data[b_index] * b->data[b_index]);
+		
+		a->grad[odometer_index] += (node->grad[odometer_index] * dda);
+		b->grad[b_index] += (node->grad[odometer_index] * ddb);
+		
+		odometer_index = odometer_next(odometer, shape_a, stride_a);
 	}
 
 }

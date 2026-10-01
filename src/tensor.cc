@@ -224,7 +224,7 @@ Tensor Tensor::operator*(const Tensor& other) const {
 	return Tensor(node);
 }
 
-Tensor Tensor::operator+(double scalar) const {
+Tensor Tensor::operator*(double scalar) const {
 	
 	int N = tensor_node->shape[dim()-1];
 	std::vector<double> scalar_vector(N, scalar);
@@ -267,7 +267,7 @@ Tensor Tensor::operator/(double scalar) const {
 	std::shared_ptr<TensorNode> scalar_node = make_operator_output_node(
 		scalar_vector, {N}, {}, nullptr);
 	
-	return operator*(Tensor(scalar_node));
+	return operator/(Tensor(scalar_node));
 }
 
 Tensor Tensor::pow(double scalar) const {

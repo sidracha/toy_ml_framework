@@ -90,8 +90,10 @@ public:
 	void on_operator(const Tensor& other);
 	
 	Tensor operator+(const Tensor& other) const;
+	Tensor operator+(double scalar) const;
 
 	Tensor operator-(const Tensor& other) const;
+	Tensor operator-(double scalar) const;
 
 	Tensor operator*(const Tensor& other) const;
 	Tensor operator*(double scalar) const;
