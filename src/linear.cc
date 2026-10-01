@@ -6,7 +6,7 @@
 
 Tensor Linear::forward(Tensor t) {
 	t = t.MATMUL_2D(weight);
-	t = t.BIAS_ADD_2D_1D(bias);
+	t = t + bias;
 	return t;
 }
 
@@ -45,14 +45,14 @@ void Linear::gradient_descent_step(double lr) {
 
 Tensor LinearReLU::forward(Tensor t) {
 	t = t.MATMUL_2D(weight);
-	t = t.BIAS_ADD_2D_1D(bias);
+	t = t + bias;
 	t = ReLU(t);
 	return t;
 }
 
 Tensor LinearSigmoid::forward(Tensor t) {
 	t = t.MATMUL_2D(weight);
-	t = t.BIAS_ADD_2D_1D(bias);
+	t = t + bias;
 	t = Sigmoid(t);
 	return t;
 }
