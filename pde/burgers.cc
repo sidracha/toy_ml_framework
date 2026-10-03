@@ -56,14 +56,10 @@ std::vector<double> burgers_forward_euler_step_periodic(std::vector<double>& u, 
 
 }
 
-void burgers_init_dataset(Dataset& train_dataset, Dataset& test_dataset) {
+void burgers_init_dataset(Dataset& train_dataset, Dataset& test_dataset, double L, int x_size, double delta_t, double nu) {
 	
-	int x_size = 64;
 	int k = 3;
-	double L = 6*std::numbers::pi;
-	double delta_x = L / x_size;
-	double nu = 0.6;
-	double delta_t = 0.02;
+	double delta_x = L / (double) x_size;
 
 	// we can create tensors like this, I guess...
 	// 100 samples... we can use different initial conitions  and modes but thats it
@@ -88,3 +84,27 @@ void burgers_init_dataset(Dataset& train_dataset, Dataset& test_dataset) {
 	}
 }
 
+// r = du/dt + u*du/dx - v * d^2u/dx^2
+// we can calculate du/dx by just using our periodic 1d function
+// and we can calculate d^2u/dx^2 by using the 2nd derivative function
+Tensor burgers_residual(Tensor input, Tensor pred, double delta_x, double delta_t, double nu) {
+	
+	// we have the input and the pred... so we calculate all the spatial derivatives
+	// directly from the pred
+	
+	// then we calcualte the du/dt as
+	// (pred-input) / (deltat)
+	Tensor ut = (pred - input) / (delta_t);
+	
+	// now calculate ux and uxx
+	Tensor ux = delx_1d_periodic(pred, delta_x);
+	Tensor uxx = del2x_1d_periodic(pred, delta_x);
+
+	// now directly calculate the residual
+	Tensor residual = ut + pred*ux - uxx * nu;
+	// now... we want to do the reduction... but this is kinda cooked right?
+	// since this is all vectors, lol
+
+	return residual;
+
+}

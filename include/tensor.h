@@ -19,6 +19,7 @@ public:
 	int concat_dim = -1;
 	std::vector<int> normalize_dims;
 	double eps;
+	double delta_x;
 
 	// backwards function takes in the current TensorNode
 	std::function<void(TensorNode*)> backward_fn;

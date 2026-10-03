@@ -424,3 +424,28 @@ void Tanh_backward(TensorNode* node) {
 	}
 
 }
+
+/*
+Tensor mean(Tensor t) {
+	// take the mean of this...
+	int N = t.tensor_node->data.size();
+	std::vector<double> avg(1);
+	// calcualte the mean and make the output node
+	for (int i=0; i<N; i++) {
+		avg[0] = avg[0] + (t.tensor_node->data[index] - avg[0]) / N;
+	}
+	
+	std::shared_ptr<TensorNode> node = make_operator_output_node(
+		avg, {1}, {t.tensor_node}, mean_backward);
+
+	return Tensor(node);
+
+}
+
+void mean_backward(TensorNode node) {
+		
+	TensorNode* A = node->predecessors[0].get();
+	// node is literally just size 1
+
+}
+*/
