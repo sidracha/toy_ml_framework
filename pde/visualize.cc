@@ -1,6 +1,7 @@
 #include "visualize.h"
 #include <matplot/matplot.h>
 #include <cmath>
+#include <filesystem>
 
 void save_burgers_video(
     const std::vector<std::vector<double>>& pred_timesteps,
@@ -8,6 +9,9 @@ void save_burgers_video(
     const std::string& filename
 ) {
     using namespace matplot;
+
+    std::string tmp_dir = "/tmp/burgers_frames";
+    std::filesystem::create_directories(tmp_dir);
 
     auto f = figure(true);
     f->size(800, 600);
@@ -36,11 +40,13 @@ void save_burgers_video(
         hold(on);
 
         auto p1 = plot(x, pred_timesteps[t]);
-        p1->line_width(2);
+        p1->line_width(2.5);
+        p1->color("red");
         p1->display_name("Prediction");
 
         auto p2 = plot(x, target_timesteps[t]);
-        p2->line_width(2);
+        p2->line_width(2.5);
+        p2->color("blue");
         p2->display_name("Target");
 
         ylim({y_min, y_max});
@@ -49,15 +55,14 @@ void save_burgers_video(
         title("Burgers Equation - Timestep " + std::to_string(t));
         legend();
 
-        std::string frame_filename = filename + "_frame_" + std::to_string(t) + ".png";
+        std::string frame_filename = tmp_dir + "/frame_" + std::to_string(t) + ".png";
         save(frame_filename);
 
         hold(off);
     }
 
-    std::string ffmpeg_cmd = "ffmpeg -y -framerate 10 -i " + filename + "_frame_%d.png -loop 0 " + filename + ".gif 2>/dev/null";
+    std::string ffmpeg_cmd = "ffmpeg -y -framerate 10 -i " + tmp_dir + "/frame_%d.png -loop 0 " + filename + ".gif 2>/dev/null";
     system(ffmpeg_cmd.c_str());
 
-    std::string cleanup_cmd = "rm " + filename + "_frame_*.png 2>/dev/null";
-    system(cleanup_cmd.c_str());
+    std::filesystem::remove_all(tmp_dir);
 }

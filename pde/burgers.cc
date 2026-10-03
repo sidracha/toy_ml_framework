@@ -5,6 +5,7 @@
 #include <numbers>
 #include <random>
 #include <iostream>
+#include <optional>
 
 #include "burgers.h"
 #include "attention.h"
@@ -21,7 +22,7 @@ std::vector<double> burgers_fourier_initial_condition(int x_size, int k, double 
 	
 	// this is the scaling factor for the coefficients
 	// will be -A/k^2, A/k^2
-	double A = 3.0;
+	double A = 1.0;
 
 	// make the combinatinations of sines and cosines here
 	
@@ -114,24 +115,24 @@ std::vector<double> burgers_forward_euler_step_periodic(std::vector<double>& u, 
 
 void burgers_train_loop() {
 	
-	int x_size = 32;
+	int x_size = 64;
 	int k = 3;
 	double L = 2*std::numbers::pi;
 	double delta_x = L / x_size;
 	double nu = 0.1;
-	double delta_t = 0.001;
+	double delta_t = 0.03;
 
 	// we can create tensors like this, I guess...
 	// 100 samples... we can use different initial conitions  and modes but thats it
 	Dataset train_dataset;
 	Dataset test_dataset;
-	int NUM_SAMPLES = 20;
+	int NUM_SAMPLES = 40;
 	// each data tensor is shape 1, N, 1
 	for (int i=0; i<NUM_SAMPLES; i++) {
 		std::vector<double> u = burgers_fourier_initial_condition(x_size, k, L);
 				
 		// timestep forward 50 times
-		for (int j=0; j<200; j++) {
+		for (int j=0; j<100; j++) {
 
 			std::vector<double> u_prev = u;
 			Tensor input = create_tensor(u_prev, {1, x_size, 1});
@@ -164,7 +165,7 @@ void burgers_train_loop() {
 	// can we even tell how many epochs there are? 
 	int batch_size = 2;
 	int epoch_size = train_dataset.data_tensors.size() / batch_size;
-	int num_epochs = 5;
+	int num_epochs = 16;
 	
 	// train loop
 	for (int epoch=0; epoch<num_epochs; epoch++) {
@@ -180,7 +181,7 @@ void burgers_train_loop() {
 			optimizer.zero_grad();
 			loss.backward();
 			optimizer.step();
-			
+
 		}
 		optimizer.lr *= lr_multiplier;
 	}
@@ -191,18 +192,19 @@ void burgers_train_loop() {
 	std::vector<std::vector<double>> preds;
 	std::vector<std::vector<double>> targets;
 	
-	for (int e=0; e<1; e++) {
-		test_dataset.prepare_epoch(1);
-		for (int i=0; i<epoch_size; i++) {
-			auto [input, target] = test_dataset.get_input();
+	int test_size = test_dataset.data_tensors.size();
+	//std::optional<Tensor> input = std::nullopt;
+	for (int i=0; i<test_size; i++) {
+		auto& [input, target] = test_dataset.data_tensors[i];
+		//if (!input.has_value()) input = _; 
 
-			Tensor pred = model.forward(input);
-			Tensor loss = MSELoss(pred, target);
-			std::cout << "iteration: " << i << " loss: " << loss.data_at(0) << std::endl;
-
-			preds.push_back(pred.tensor_node->data);
-			targets.push_back(target.tensor_node->data);
-		}
+		Tensor pred = model.forward(input);
+		Tensor loss = MSELoss(pred, target);
+		std::cout << "iteration: " << i << " loss: " << loss.data_at(0) << std::endl;
+	
+		preds.push_back(pred.tensor_node->data);
+		targets.push_back(target.tensor_node->data);
+		//input = pred;
 	}
 
   save_burgers_video(preds, targets, "burgers_comparison");
