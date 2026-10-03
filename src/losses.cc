@@ -9,7 +9,7 @@
 Tensor MSELoss(Tensor a, Tensor b) {
 	
 	if (a.shape() != b.shape() || a.stride() != b.stride()) {
-		throw std::runtime_error("Tensor shapes do not match");
+		throw std::runtime_error("MSELoss: Tensor shapes do not match");
 	}
 	// each row holds a "vector"
 	// so I guess calculate the MSE of the vectors first

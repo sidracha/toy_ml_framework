@@ -178,8 +178,12 @@ void div_backward(TensorNode* node) {
 
 	while (odometer_index >= 0) {
 		int b_index = calculate_offset_broadcast(odometer, stride_b, shape_b);
-		double dda = 1 / b->data[b_index];
-		double ddb = -a->data[odometer_index] / (b->data[b_index] * b->data[b_index]);
+		double b_val = b->data[b_index];
+		// prevents div from blwoing up like in the layernorm thing, add 
+		// this for better nuemrical stability
+		if (std::abs(b_val) < 1e-10) b_val = (b_val >= 0) ? 1e-10 : -1e-10;
+		double dda = 1 / b_val;
+		double ddb = -a->data[odometer_index] / (b_val * b_val);
 		
 		a->grad[odometer_index] += (node->grad[odometer_index] * dda);
 		b->grad[b_index] += (node->grad[odometer_index] * ddb);

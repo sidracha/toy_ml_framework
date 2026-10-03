@@ -59,6 +59,11 @@ std::shared_ptr<TensorNode> create_tensor_node(std::vector<double>& data, const 
 	return node;
 }
 
+Tensor create_tensor(std::vector<double>& data, const std::vector<int>& shape) {
+	std::shared_ptr<TensorNode> node = create_tensor_node(data, shape);
+	return Tensor(node);
+}
+
 Tensor create_tensor_scalar(const std::vector<int>& shape, double scalar) {
 	int N = 1;
 	for (int i=0; i<shape.size(); i++) N *= shape[i];

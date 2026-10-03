@@ -1,19 +1,24 @@
 CXX      := g++
-CXXFLAGS := -std=c++20 -Ofast -w -g -MMD -MP -Iinclude -I. -I$(shell brew --prefix)/include
+CXXFLAGS := -std=c++20 -Ofast -w -g -MMD -MP -Iinclude -I. -Ipde -I$(shell brew --prefix)/include
 LDFLAGS  := -L$(shell brew --prefix)/lib -lmatplot -lfftw3
 
 SRCDIR   := src
+PDEDIR   := pde
 BUILDDIR := build
 
 # Core library (src/*.cc -> libml.a)
 LIB_SRCS := $(wildcard $(SRCDIR)/*.cc)
 LIB_OBJS := $(patsubst $(SRCDIR)/%.cc,$(BUILDDIR)/%.o,$(LIB_SRCS))
 
+# PDE sources (pde/*.cc)
+PDE_SRCS := $(wildcard $(PDEDIR)/*.cc)
+PDE_OBJS := $(patsubst $(PDEDIR)/%.cc,$(BUILDDIR)/pde_%.o,$(PDE_SRCS))
+
 # Application sources (root directory)
 APP_SRCS := main.cc train_loop.cc fourier_train.cc
 APP_OBJS := $(patsubst %.cc,$(BUILDDIR)/%.o,$(APP_SRCS))
 
-ALL_OBJS := $(LIB_OBJS) $(APP_OBJS)
+ALL_OBJS := $(LIB_OBJS) $(PDE_OBJS) $(APP_OBJS)
 DEPS     := $(ALL_OBJS:.o=.d)
 
 TARGET   := program
@@ -25,7 +30,7 @@ all: $(TARGET)
 
 lib: $(LIBRARY)
 
-$(LIBRARY): $(LIB_OBJS) | $(BUILDDIR)
+$(LIBRARY): $(LIB_OBJS) $(PDE_OBJS) | $(BUILDDIR)
 	ar rcs $@ $^
 
 $(TARGET): $(APP_OBJS) $(LIBRARY)
@@ -33,6 +38,10 @@ $(TARGET): $(APP_OBJS) $(LIBRARY)
 
 # Compile library sources
 $(BUILDDIR)/%.o: $(SRCDIR)/%.cc | $(BUILDDIR)
+	$(CXX) $(CXXFLAGS) -c $< -o $@
+
+# Compile pde sources
+$(BUILDDIR)/pde_%.o: $(PDEDIR)/%.cc | $(BUILDDIR)
 	$(CXX) $(CXXFLAGS) -c $< -o $@
 
 # Compile app sources from root

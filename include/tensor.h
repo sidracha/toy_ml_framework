@@ -110,7 +110,7 @@ public:
 	Tensor MATMUL_2D(const Tensor& other) const;
 	Tensor BIAS_ADD_2D_1D(const Tensor& bias) const;
 
-	void backward(bool retain_graph);
+	void backward(bool retain_graph=false);
 
 	std::vector<int> shape() const {return tensor_node->shape;}
 	std::vector<int> stride() const {return tensor_node->stride;}
@@ -144,6 +144,7 @@ std::shared_ptr<TensorNode> make_operator_output_node(
 	const std::vector<std::shared_ptr<TensorNode>>& predecessors,
 	std::function<void(TensorNode*)> backward_fn);
 
+Tensor create_tensor(std::vector<double>& data, const std::vector<int>& shape);
 Tensor create_tensor_zeros(const std::vector<int>& shape);
 Tensor create_tensor_random(const std::vector<int>& shape, double DIST_MIN, double DIST_MAX);
 Tensor create_tensor_scalar(const std::vector<int>& shape, double scalar);

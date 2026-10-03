@@ -198,7 +198,7 @@ bool check_concat_dims(const Tensor& t1, const Tensor& t2, int dim) {
 }
 
 
-Tensor concat(const std::vector<Tensor>& array, int concat_dim) {
+Tensor concat(const std::vector<Tensor>& array, int concat_dim, bool use_grad) {
 
 	// basically just reutn utself/noop if its
 	// concat with 1, dont even add to ghte graph
@@ -282,11 +282,13 @@ Tensor concat(const std::vector<Tensor>& array, int concat_dim) {
 	}
 	
 	// now make the output node
+	std::function<void(TensorNode*)> backward_fn = (use_grad == true) ? concat_backward : nullptr; 
+	
 	std::vector<std::shared_ptr<TensorNode>> predecessors;
 	for (auto& t : array) predecessors.push_back(t.tensor_node);
 
 	std::shared_ptr<TensorNode> node = make_operator_output_node(
-		output, output_shape, predecessors, concat_backward);
+		output, output_shape, predecessors, backward_fn);
 	node->concat_dim = concat_dim;	
 
 	return Tensor(node);
