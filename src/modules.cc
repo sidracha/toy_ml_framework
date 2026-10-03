@@ -214,8 +214,6 @@ void layer_norm_backward(TensorNode* Y) {
 
 			double a = std::sqrt(variance + eps);
 			
-			//prevent div blowiin up
-			a = std::max(a, 1e-6); 
 			double h = Y->grad[index] * gamma->data[gamma_offset];
 			double dLdxi = (h/a) - (term1/(N*a)) - ((X->data[index]-mean)/(N*a*a*a)) * term2;
 
