@@ -20,6 +20,10 @@ void save_burgers_video(
     int num_timesteps = pred_timesteps.size();
     int num_points = pred_timesteps[0].size();
 
+    int max_frames = 60;
+    int skip = std::max(1, num_timesteps / max_frames);
+    int actual_frames = 0;
+
     std::vector<double> x(num_points);
     for (int i = 0; i < num_points; i++) {
         x[i] = static_cast<double>(i);
@@ -36,7 +40,7 @@ void save_burgers_video(
     y_min -= margin;
     y_max += margin;
 
-    for (int t = 0; t < num_timesteps; t++) {
+    for (int t = 0; t < num_timesteps; t += skip) {
         cla();
         hold(on);
 
@@ -57,16 +61,21 @@ void save_burgers_video(
         title("1D Burgers: ∂u/∂t + u·∂u/∂x = ν·∂²u/∂x²   |   Timestep " + std::to_string(t));
         legend();
 
-        std::string frame_filename = tmp_dir + "/frame_" + std::to_string(t) + ".png";
+        std::string frame_filename = tmp_dir + "/frame_" + std::to_string(actual_frames) + ".png";
         save(frame_filename);
+        actual_frames++;
 
         hold(off);
     }
 
-    std::string palette_cmd = "ffmpeg -y -framerate 10 -i " + tmp_dir + "/frame_%d.png -vf palettegen " + tmp_dir + "/palette.png 2>/dev/null";
+    double gif_duration = 6.0;
+    int framerate = std::max(1, static_cast<int>(actual_frames / gif_duration));
+    std::string fr = std::to_string(framerate);
+
+    std::string palette_cmd = "ffmpeg -y -framerate " + fr + " -i " + tmp_dir + "/frame_%d.png -vf palettegen " + tmp_dir + "/palette.png 2>/dev/null";
     system(palette_cmd.c_str());
 
-    std::string gif_cmd = "ffmpeg -y -framerate 10 -i " + tmp_dir + "/frame_%d.png -i " + tmp_dir + "/palette.png -lavfi paletteuse -loop 0 " + filename + ".gif 2>/dev/null";
+    std::string gif_cmd = "ffmpeg -y -framerate " + fr + " -i " + tmp_dir + "/frame_%d.png -i " + tmp_dir + "/palette.png -lavfi paletteuse -loop 0 " + filename + ".gif 2>/dev/null";
     system(gif_cmd.c_str());
 
     std::filesystem::remove_all(tmp_dir);
