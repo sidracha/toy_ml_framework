@@ -115,24 +115,24 @@ std::vector<double> burgers_forward_euler_step_periodic(std::vector<double>& u, 
 
 void burgers_train_loop() {
 	
-	int x_size = 32;
+	int x_size = 40;
 	int k = 3;
 	double L = 2*std::numbers::pi;
 	double delta_x = L / x_size;
-	double nu = 0.1;
+	double nu = 0.3;
 	double delta_t = 0.03;
 
 	// we can create tensors like this, I guess...
 	// 100 samples... we can use different initial conitions  and modes but thats it
 	Dataset train_dataset;
 	Dataset test_dataset;
-	int NUM_SAMPLES = 40;
+	int NUM_SAMPLES = 80;
 	// each data tensor is shape 1, N, 1
 	for (int i=0; i<NUM_SAMPLES; i++) {
 		std::vector<double> u = burgers_fourier_initial_condition(x_size, k, L);
 				
 		// timestep forward
-		for (int j=0; j<150; j++) {
+		for (int j=0; j<100; j++) {
 
 			std::vector<double> u_prev = u;
 			Tensor input = create_tensor(u_prev, {1, x_size, 1});
@@ -157,7 +157,7 @@ void burgers_train_loop() {
 	auto identity = [](const Tensor& t) { return t; };
 	Transformer model(num_blocks, num_heads, embed_dim, input_embed_dim, output_embed_dim, mlp_ratio, Tanh);
 	
-	double lr = 0.08;
+	double lr = 0.05;
 	double lr_multiplier = 0.92; 
 	Optimizer optimizer(model.layers, lr);
 
@@ -165,7 +165,7 @@ void burgers_train_loop() {
 	// can we even tell how many epochs there are? 
 	int batch_size = 2;
 	int epoch_size = train_dataset.data_tensors.size() / batch_size;
-	int num_epochs = 16;
+	int num_epochs = 12;
 	
 	// train loop
 	for (int epoch=0; epoch<num_epochs; epoch++) {

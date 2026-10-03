@@ -14,7 +14,8 @@ void save_burgers_video(
     std::filesystem::create_directories(tmp_dir);
 
     auto f = figure(true);
-    f->size(800, 600);
+    f->size(900, 650);
+    f->position({0, 0, 900, 650});
 
     int num_timesteps = pred_timesteps.size();
     int num_points = pred_timesteps[0].size();
@@ -49,10 +50,11 @@ void save_burgers_video(
         p2->color("blue");
         p2->display_name("Target");
 
+        xlim({0, static_cast<double>(num_points)});
         ylim({y_min, y_max});
         xlabel("x");
         ylabel("u");
-        title("Burgers Equation - Timestep " + std::to_string(t));
+        title("1D Burgers: ∂u/∂t + u·∂u/∂x = ν·∂²u/∂x²   |   Timestep " + std::to_string(t));
         legend();
 
         std::string frame_filename = tmp_dir + "/frame_" + std::to_string(t) + ".png";
