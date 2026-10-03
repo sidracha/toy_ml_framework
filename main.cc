@@ -9,12 +9,13 @@
 #include "losses.h"
 #include "nn.h"
 #include "burgers.h"
+#include "train_pde.h"
 
 
 int main () {
 	
 	//fft_train_loop();
-	burgers_train_loop();
+	pde_train_loop();
 	return 1;
 	
 }

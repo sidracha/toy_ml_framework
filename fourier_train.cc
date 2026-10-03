@@ -14,7 +14,7 @@
 #include <cmath>
 #include <matplot/matplot.h>
 
-#define B 2
+#define B 16
 #define NUM_FREQS 5
 
 double signal_fn(double t, const std::vector<double>& freqs, const std::vector<double>& amps) {
@@ -181,12 +181,12 @@ void fft_train_loop() {
 	// so we will have some shape of 
 	// {B, N, 2}
 	// which will go into our transformer
-	int num_blocks = 4;
+	int num_blocks = 6;
 	int num_heads = 4;
-	int embed_dim = 16;
+	int embed_dim = 8;
 	int input_embed_dim = 1;
 	int output_embed_dim = 2;
-	int mlp_ratio = 4;
+	int mlp_ratio = 2;
 	auto identity = [](const Tensor& t) { return t; };
 	Transformer model(num_blocks, num_heads, embed_dim, input_embed_dim, output_embed_dim, mlp_ratio, Tanh);
 	
