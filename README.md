@@ -25,12 +25,13 @@ Parts that work:
 - Transformer block
 - Transformer/MLP train
 - Automatic graph clearing
+- Forward euler w/ periodic boundary conditions for 1-D Burgers, KdV, KS
 
 DFT predictor (iterations /40 is the loss scale, see fourier_train.cc)
   
 <img width="1300" height="393" alt="Screenshot 2026-09-30 at 11 01 42 AM" src="https://github.com/user-attachments/assets/f20c5ac2-67b5-46c3-b61d-0cfb145611c1" />
 
-Burgers equation solver (red=prediction, blue=target)
+Burgers equation 1 step predictor (red=prediction, blue=target)
 
 ![Burgers Equation](burgers_comparison.gif)
 
