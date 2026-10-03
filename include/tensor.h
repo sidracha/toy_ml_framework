@@ -18,7 +18,7 @@ public:
 	std::vector<std::shared_ptr<TensorNode>> predecessors;
 	int concat_dim = -1;
 	std::vector<int> normalize_dims;
-	int eps;
+	double eps;
 
 	// backwards function takes in the current TensorNode
 	std::function<void(TensorNode*)> backward_fn;
