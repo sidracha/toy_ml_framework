@@ -115,7 +115,7 @@ std::vector<double> burgers_forward_euler_step_periodic(std::vector<double>& u, 
 
 void burgers_train_loop() {
 	
-	int x_size = 64;
+	int x_size = 32;
 	int k = 3;
 	double L = 2*std::numbers::pi;
 	double delta_x = L / x_size;
@@ -131,8 +131,8 @@ void burgers_train_loop() {
 	for (int i=0; i<NUM_SAMPLES; i++) {
 		std::vector<double> u = burgers_fourier_initial_condition(x_size, k, L);
 				
-		// timestep forward 50 times
-		for (int j=0; j<100; j++) {
+		// timestep forward
+		for (int j=0; j<150; j++) {
 
 			std::vector<double> u_prev = u;
 			Tensor input = create_tensor(u_prev, {1, x_size, 1});

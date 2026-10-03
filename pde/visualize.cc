@@ -61,8 +61,11 @@ void save_burgers_video(
         hold(off);
     }
 
-    std::string ffmpeg_cmd = "ffmpeg -y -framerate 10 -i " + tmp_dir + "/frame_%d.png -loop 0 " + filename + ".gif 2>/dev/null";
-    system(ffmpeg_cmd.c_str());
+    std::string palette_cmd = "ffmpeg -y -framerate 10 -i " + tmp_dir + "/frame_%d.png -vf palettegen " + tmp_dir + "/palette.png 2>/dev/null";
+    system(palette_cmd.c_str());
+
+    std::string gif_cmd = "ffmpeg -y -framerate 10 -i " + tmp_dir + "/frame_%d.png -i " + tmp_dir + "/palette.png -lavfi paletteuse -loop 0 " + filename + ".gif 2>/dev/null";
+    system(gif_cmd.c_str());
 
     std::filesystem::remove_all(tmp_dir);
 }
