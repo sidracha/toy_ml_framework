@@ -2,26 +2,60 @@
 #include "layer.h"
 #include "optimizer.h"
 
-// we do SIMPLE gradient descent
-// nothing fanciful
 
-// stores a vector list of layers...
+// stores a vector list of params
 // this will just hold the parameters
-// can change this later to have a model class
-
-// intermediete nodes are owned by the same Graph object that input is spawned off of...
 
 	
 void Optimizer::zero_grad() {
-	// go through every single tensor in layers.. and set it to 0
-	// but also each layer should have the interface to set to 0
-	for (const auto& layer : layers) layer->zero_grad();
+	// okkk lets just go through all of the tenosr params 
+	// and do it
+	for (Tensor* tensor : params) {
+		int N = tensor->tensor_node->grad.size();
+		for (int i=0; i<N; i++) tensor->tensor_node->grad[i] = 0;
+	}
 }
 
-
-// just goes through all the layers and updates their parameters
-// very naive
-void Optimizer::step() {
+// for the sgd one just iterate through
+// and apply the parameter updaate thats it
+void SGDOptimizer::step() {
 	
-	for (const auto& layer : layers) layer->gradient_descent_step(lr);
-} 
+	for (Tensor* tensor : params) {
+		int N = tensor->tensor_node->grad.size();
+		for (int i=0; i<N; i++) {
+			tensor->tensor_node->data[i] -= lr * tensor->tensor_node->grad[i];
+		}
+	}
+}
+
+// apply the algorithm from the 
+// Adam 2015 iclr paper
+// we already have m and v from the init 
+void Adam::step() {
+	
+	// iterate over each tensor
+	for (int i=0; i<params.size(); i++) {
+		
+		Tensor* t = params[i];
+		int N = t->tensor_node->grad.size();
+		for (int j=0; j<N; j++) {
+			// apply the algo here, each pointwise so we are good
+			double g = t->tensor_node->grad[j];
+
+			double mt = beta1*m[i][j] + (1-beta1) * g;
+			double vt = beta2*v[i][j] + (1-beta2) * (g*g);
+			// bias corrected estimate
+			double mc = mt / (1-beta1);
+			double vc = vt / (1-beta2);
+
+			// update parameter
+			// find the update amount
+			double step_amount = mc / (std::sqrt(vc) + eps);
+			double update = -lr * step_amount;
+			t->tensor_node->data[j] += update;
+
+		}
+
+	}
+
+}

@@ -20,8 +20,6 @@ public:
 
 	SelfAttn(int _num_heads, int _embed_dim);
 	Tensor forward(Tensor t) override;
-	void zero_grad() override;
-	void gradient_descent_step(double lr) override;
 
 };
 
@@ -49,12 +47,7 @@ public:
 	}
 
 	Tensor forward(Tensor t) override;
-	void zero_grad() override {
-		for (auto& layer : layers) layer->zero_grad();
-	}
-	void gradient_descent_step(double lr) override {
-		for (auto& layer : layers) layer->gradient_descent_step(lr);
-	}
+
 };
 
 class Transformer : public Layer {
@@ -113,11 +106,4 @@ public:
 
 	}
 
-
-	void zero_grad() override {
-		for (auto& layer : layers) layer->zero_grad();
-	}
-	void gradient_descent_step(double lr) override {
-		for (auto& layer : layers) layer->gradient_descent_step(lr);
-	}
 };

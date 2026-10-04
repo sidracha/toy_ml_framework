@@ -15,25 +15,20 @@ public:
 	double DIST_MAX = 0.1;
 	int N;
 	int M;
-	Tensor weight;
-	Tensor bias;
-
-
+	
 	Linear(int _N, int _M)
 		: N(_N),
-		M(_M),
-		weight(create_tensor_random({N, M}, DIST_MIN, DIST_MAX)),
-		bias(create_tensor_zeros({1, M})) {
+		M(_M) {
 
 		if (N <= 0 || M <= 0) throw std::runtime_error("Invalid linear layer shape");
+		
+		params.push_back(create_tensor_random({N, M}, DIST_MIN, DIST_MAX));
+		params.push_back(create_tensor_zeros({1, M}));
 	
 	}
-	
 	// tensor T is not owned by anything else...
 	// each layers owns its own tensors, its fine!
-	Tensor forward(Tensor t) override;	
-	void zero_grad() override;
-	void gradient_descent_step(double lr) override;
+	Tensor forward(Tensor t) override;
 
 };
 
@@ -90,13 +85,6 @@ public:
 
 	}
 
-	void zero_grad() {
-		for (const auto& layer : layers) layer->zero_grad();
-	}
-
-	void gradient_descent_step(double lr) {
-		for (const auto& layer : layers) layer->gradient_descent_step(lr);
-	} 
 	
 	std::vector<std::unique_ptr<Layer>>& get_layers() {
 		return layers;

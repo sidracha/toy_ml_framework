@@ -5,20 +5,35 @@
 #include <vector>
 
 
-// layer also has to implement set the grad to 0
 class Layer {
 public:
 	std::vector<std::unique_ptr<Layer>> layers;
+	std::vector<Tensor> params;
 
 	Layer() {}
 	virtual ~Layer() = default;
 
 	virtual Tensor forward(Tensor t) = 0;
-	virtual void zero_grad() = 0;
-	virtual void gradient_descent_step(double lr) = 0;
 
 	virtual std::vector<std::unique_ptr<Layer>>& get_layers() {
 		return layers;
+	}
+	
+	std::vector<Tensor*> get_params() { 
+		
+		std::vector<Tensor*> out;
+		
+		// through layers first recursively
+		for (const auto& layer : layers) {
+			std::vector<Tensor*> layer_params = layer->get_params();
+			for (int i=0; i<layer_params.size(); i++) out.push_back(layer_params[i]);
+		}
+		
+		// now through the current layers params
+		for (int i=0; i<params.size(); i++) {
+			out.push_back(&params[i]);
+		}
+		return out;
 	}
 
 };
@@ -40,13 +55,6 @@ public:
 			t = layer->forward(t);
 		}
 		return t;
-	}
-
-	void zero_grad() {
-		for (const auto& layer : layers) layer->zero_grad();
-	}
-	void gradient_descent_step(double lr) {
-		for (const auto& layer : layers) layer->gradient_descent_step(lr);
 	}
 
 };

@@ -24,15 +24,4 @@ public:
 	
 	Tensor forward(Tensor t);
 
-	void zero_grad() override {
-		std::fill(gamma.tensor_node->grad.begin(), gamma.tensor_node->grad.end(), 0.0);
-		std::fill(beta.tensor_node->grad.begin(), beta.tensor_node->grad.end(), 0.0);
-	}
-
-	void gradient_descent_step(double lr) override {
-		for (int i = 0; i < gamma.tensor_node->data.size(); i++) {
-			gamma.tensor_node->data[i] -= lr * gamma.tensor_node->grad[i];
-			beta.tensor_node->data[i] -= lr * beta.tensor_node->grad[i];
-		}
-	}
 };

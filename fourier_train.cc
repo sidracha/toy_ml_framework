@@ -192,7 +192,7 @@ void fft_train_loop() {
 	
 	double lr = 0.8;
 	double lr_scale = 0.99998;
-	Optimizer optimizer(model.layers, lr);
+	SGDOptimizer optimizer(model.get_params(), lr);
 
 	int NUM_ITERATIONS = 40000;
 	int LOG_INTERVAL = NUM_ITERATIONS / 100;

@@ -105,7 +105,7 @@ void train_fn() {
 
 	double learning_rate = 0.05;
 	double learning_rate_multiplier = 0.9996;
-	Optimizer optim(model.layers, learning_rate);
+	SGDOptimizer optim(model.get_params(), learning_rate);
 
 	int NUM_ITERATIONS = 50000;
 

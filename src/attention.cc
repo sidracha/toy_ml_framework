@@ -79,13 +79,6 @@ Tensor SelfAttn::forward(Tensor t) {
 
 }
 
-void SelfAttn::zero_grad() {
-	for (int i=0; i<layers.size(); i++) layers[i]->zero_grad();
-}
-
-void SelfAttn::gradient_descent_step(double lr) {
-	for (int i=0; i<layers.size(); i++) layers[i]->gradient_descent_step(lr);
-}
 
 
 Tensor SelfAttnBlock::forward(Tensor t) {
