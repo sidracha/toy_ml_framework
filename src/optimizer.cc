@@ -54,6 +54,10 @@ void Adam::step() {
 			double update = -lr * step_amount;
 			t->tensor_node->data[j] += update;
 
+			// now store the values back
+			m[i][j] = mt;
+			v[i][j] = vt;
+
 		}
 
 	}

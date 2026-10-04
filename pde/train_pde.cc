@@ -22,13 +22,13 @@ void pde_train_loop() {
 	int x_size = 32;
 	int num_blocks = 2;
 	int num_heads = 4;
-	int embed_dim = 32;
+	int embed_dim = 16;
 	int input_embed_dim = 1;
 	int output_embed_dim = 1;
 	int mlp_ratio = 2;
 	Transformer model(num_blocks, num_heads, embed_dim, input_embed_dim, output_embed_dim, mlp_ratio, Tanh);
 
-	double lr = 0.001;
+	double lr = 0.002;
 	Adam optimizer(model.get_params(), lr);
 
 	double delta_t = 0.05;
@@ -42,7 +42,7 @@ void pde_train_loop() {
 
 	int batch_size = 8;
 	int epoch_size = train_dataset.data_tensors.size() / batch_size;
-	int num_epochs = 10;
+	int num_epochs = 5;
 
 	double r_scale = 0.0;
 	double r_mult;
@@ -64,9 +64,7 @@ void pde_train_loop() {
 				input = _;
 			}
 
-			Tensor pred = model.forward(input.value());
-			Tensor pred_residual = pred - input.value();
-			
+			Tensor pred_residual = model.forward(input.value());
 			Tensor target_residual = target - input.value();
 			Tensor data_loss = MSELoss(pred_residual, target_residual);
 
@@ -89,7 +87,7 @@ void pde_train_loop() {
 			loss.backward();
 			optimizer.step();
 			loss.tensor_node->predecessors.clear();
-			pred.tensor_node->predecessors.clear();
+			pred_residual.tensor_node->predecessors.clear();
 
 			if (use_autoregressive) {
 				if (step >= autoreg_steps) {
@@ -97,6 +95,7 @@ void pde_train_loop() {
 					input = std::nullopt;
 				}
 				else {
+					Tensor pred = input.value() + pred_residual;
 					input = create_tensor(pred.tensor_node->data, pred.shape());
 				}
 				step++;
@@ -112,12 +111,12 @@ void pde_train_loop() {
 	std::vector<std::vector<double>> targets;
 
 	int test_size = test_dataset.data_tensors.size();
-
+	bool test_autoregressive = true;
 	input = std::nullopt;
 	for (int i=0; i<test_size; i++) {
 		auto& [_, target] = test_dataset.data_tensors[i];
 
-		if (use_autoregressive) {
+		if (test_autoregressive) {
 			if (!input.has_value()) input = _;
 		} else {
 			input = _;
@@ -133,7 +132,7 @@ void pde_train_loop() {
 		preds.push_back(pred.tensor_node->data);
 		targets.push_back(target.tensor_node->data);
 
-		if (use_autoregressive) {
+		if (test_autoregressive) {
 			input = create_tensor(pred.tensor_node->data, pred.shape());
 		}
 	}
