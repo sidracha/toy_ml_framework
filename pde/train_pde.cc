@@ -20,7 +20,7 @@
 void pde_train_loop() {
 
 	int x_size = 32;
-	int num_blocks = 2;
+	int num_blocks = 3;
 	int num_heads = 4;
 	int embed_dim = 16;
 	int input_embed_dim = 1;
@@ -42,7 +42,7 @@ void pde_train_loop() {
 
 	int batch_size = 8;
 	int epoch_size = train_dataset.data_tensors.size() / batch_size;
-	int num_epochs = 5;
+	int num_epochs = 12;
 
 	double r_scale = 0.0;
 	double r_mult;

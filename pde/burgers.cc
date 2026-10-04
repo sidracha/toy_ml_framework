@@ -69,7 +69,7 @@ void burgers_init_dataset(Dataset& train_dataset, Dataset& test_dataset, double 
 		std::vector<double> u = fourier_initial_condition(x_size, k, L);
 				
 		// timestep forward
-		for (int j=0; j<400; j++) {
+		for (int j=0; j<200; j++) {
 
 			std::vector<double> u_prev = u;
 			Tensor input = create_tensor(u_prev, {1, x_size, 1});

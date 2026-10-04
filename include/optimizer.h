@@ -28,6 +28,7 @@ public:
 	double beta1;
 	double beta2;
 	double eps;
+	double t = 0;
 
 	// first and second moments
 	std::vector<std::vector<double>> m;

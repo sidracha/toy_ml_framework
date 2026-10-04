@@ -207,8 +207,8 @@ void pow_backward(TensorNode* node) {
 		int b_index = (b->data.size() == 1) ? 0 : i;
 		double dda = b->data[b_index] * std::pow(a->data[i], b->data[b_index]-1);
 		double ddb = std::pow(a->data[i], b->data[b_index]) * std::log(a->data[i]);
-		a->grad[i] += dda;
-		b->grad[b_index] += ddb;
+		a->grad[i] += node->grad[i] * dda;
+		b->grad[b_index] += node->grad[i] * ddb;
 
 	}
 
