@@ -2,6 +2,7 @@
 #include "layer.h"
 #include "optimizer.h"
 
+#include <cmath>
 
 // stores a vector list of params
 // this will just hold the parameters
@@ -33,26 +34,27 @@ void SGDOptimizer::step() {
 // we already have m and v from the init 
 void Adam::step() {
 	
+	t++;
 	// iterate over each tensor
 	for (int i=0; i<params.size(); i++) {
 		
-		Tensor* t = params[i];
-		int N = t->tensor_node->grad.size();
+		Tensor* tensor = params[i];
+		int N = tensor->tensor_node->grad.size();
 		for (int j=0; j<N; j++) {
 			// apply the algo here, each pointwise so we are good
-			double g = t->tensor_node->grad[j];
+			double g = tensor->tensor_node->grad[j];
 
 			double mt = beta1*m[i][j] + (1-beta1) * g;
 			double vt = beta2*v[i][j] + (1-beta2) * (g*g);
 			// bias corrected estimate
-			double mc = mt / (1-beta1);
-			double vc = vt / (1-beta2);
+			double mc = mt / (1-std::pow(beta1, (double)t));
+			double vc = vt / (1-std::pow(beta2, (double)t));
 
 			// update parameter
 			// find the update amount
 			double step_amount = mc / (std::sqrt(vc) + eps);
 			double update = -lr * step_amount;
-			t->tensor_node->data[j] += update;
+			tensor->tensor_node->data[j] += update;
 
 			// now store the values back
 			m[i][j] = mt;
