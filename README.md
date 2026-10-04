@@ -44,7 +44,10 @@ DFT predictor (iterations /40 is the loss scale, see fourier_train.cc)
 <img width="1300" height="393" alt="Screenshot 2026-09-30 at 11 01 42 AM" src="https://github.com/user-attachments/assets/f20c5ac2-67b5-46c3-b61d-0cfb145611c1" />
 
 TODO (in order of priority):
-- Optimizer holds params
+- Scheduled Sampling
+- Dataset for autoreg
+- Higher order gradients in autograd (kind hard tho)
+- (DONE) Optimizer holds params
 - GeLU
 - Swish
 - (DONE) change make_operator_output_node function take a list of predecessors
