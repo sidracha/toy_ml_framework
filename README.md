@@ -8,6 +8,7 @@ but the underlying framework is different
 Parts that work:
 - Autograd
 - Optimizer
+- Adam
 - Tensor
 - Tensor shape/stride aware
 - Transpose
