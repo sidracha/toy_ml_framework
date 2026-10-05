@@ -20,5 +20,5 @@ public:
 
 	std::pair<Tensor, Tensor> get_input();
 	void shuffle();
-	void prepare_epoch(int batch_size);
+	void prepare_epoch(int batch_size, bool do_shuffle = false);
 };

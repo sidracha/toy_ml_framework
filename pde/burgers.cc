@@ -63,12 +63,11 @@ void burgers_init_dataset(Dataset& train_dataset, Dataset& test_dataset, double 
 
 	// we can create tensors like this, I guess...
 	// 100 samples... we can use different initial conitions  and modes but thats it
-	int NUM_SAMPLES = 100;
+	int NUM_SAMPLES = 200;
 	// each data tensor is shape 1, N, 1
 	for (int i=0; i<NUM_SAMPLES; i++) {
 		std::vector<double> u = fourier_initial_condition(x_size, k, L);
 				
-		// timestep forward
 		for (int j=0; j<200; j++) {
 
 			std::vector<double> u_prev = u;

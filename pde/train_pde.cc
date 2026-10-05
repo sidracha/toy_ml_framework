@@ -38,7 +38,7 @@ void autoreg_train_loop(
 		for (int i=1; i<trajectory.size(); i++) {
 			// we want to predict the residual
 			Tensor pred_residual = model.forward(input);
-			Tensor target_residual = trajectory[i] - input;
+			Tensor target_residual = trajectory[i] - trajectory[i-1]; 
 
 			Tensor step_loss = MSELoss(pred_residual, target_residual);
 			losses.push_back(step_loss);
@@ -63,6 +63,36 @@ void autoreg_train_loop(
 	}
 }
 
+
+void single_step_train_loop(
+	Layer& model,
+	Optimizer& optimizer,
+	Dataset& train_dataset,
+	int batch_size,
+	int epoch) {
+		
+	train_dataset.prepare_epoch(batch_size);
+	
+	for (int i=0; i<train_dataset.epoch_tensors.size(); i++) {
+		auto [input, target] = train_dataset.get_input();
+		Tensor pred_residual = model.forward(input);
+		Tensor target_residual = target - input;
+		Tensor data_loss = MSELoss(pred_residual, target_residual);
+
+		std::cout << "epoch: " << epoch << " | iteration: " << i << " loss: " << data_loss.data_at(0) << std::endl;
+
+		optimizer.zero_grad();
+		data_loss.backward();
+		optimizer.step();
+		
+		data_loss.tensor_node->predecessors.clear();
+		pred_residual.tensor_node->predecessors.clear();
+	}
+
+}
+
+
+
 void autoreg_test_loop(Layer& model, AutoregDataset& test_dataset, int num_steps) {
 
 	test_dataset.prepare_epoch(1, num_steps);
@@ -70,7 +100,7 @@ void autoreg_test_loop(Layer& model, AutoregDataset& test_dataset, int num_steps
 	std::vector<std::vector<double>> preds;
 	std::vector<std::vector<double>> targets;
 
-	for (int s=0; s<test_dataset.num_samples(); s++) {
+	for (int s=0; s<1; s++) {
 		// get the vector
 		std::vector<Tensor> trajectory = test_dataset.get_input();
 		// now iterate through
@@ -89,6 +119,26 @@ void autoreg_test_loop(Layer& model, AutoregDataset& test_dataset, int num_steps
 
 			input = create_tensor(pred.tensor_node->data, pred.shape());
 		}
+	}
+
+	save_burgers_video(preds, targets, "burgers_comparison");
+}
+
+void single_step_test_loop(Layer& model, Dataset& test_dataset) {
+
+	std::vector<std::vector<double>> preds;
+	std::vector<std::vector<double>> targets;
+	test_dataset.prepare_epoch(1, false);
+	
+	for (int i=0; i<test_dataset.epoch_tensors.size(); i++) {
+		auto [input, target] = test_dataset.get_input();
+		Tensor pred_residual = model.forward(input);
+		Tensor target_residual = target - input;
+		
+		Tensor pred = input + pred_residual;
+
+		preds.push_back(pred.tensor_node->data);
+		targets.push_back(target.tensor_node->data);
 	}
 
 	save_burgers_video(preds, targets, "burgers_comparison");
@@ -113,24 +163,28 @@ void pde_train_loop() {
 	double L = 6 * std::numbers::pi;
 	double delta_x = L / (double) x_size;
 
-	AutoregDataset train_dataset;
-	AutoregDataset test_dataset;
+	//AutoregDataset test_dataset;
+	//AutoregDataset train_dataset;
+	Dataset train_dataset;
+	Dataset test_dataset;
 	burgers_init_dataset(train_dataset, test_dataset, L, x_size, delta_t, nu);
 
 	int batch_size = 10;
 	int epoch_size = train_dataset.data_tensors.size() / batch_size;
-	int num_epochs = 4;
+	int num_epochs = 2;
 
 	double r_scale = 0.0;
 	double r_mult;
 	Tensor zero_tensor = create_tensor_zeros({batch_size, x_size, 1});
 	
-	int num_autoreg_steps = 10;
+	int num_autoreg_steps = 2;
 
 	for (int epoch=0; epoch<num_epochs; epoch++) {
-		autoreg_train_loop(model, optimizer, train_dataset, batch_size, num_autoreg_steps, epoch);
+		//autoreg_train_loop(model, optimizer, train_dataset, batch_size, num_autoreg_steps, epoch);
+		single_step_train_loop(model, optimizer, train_dataset, batch_size, epoch);
 	}
 
-	autoreg_test_loop(model, test_dataset, 200);
+	//autoreg_test_loop(model, test_dataset, 200);
+	single_step_test_loop(model, test_dataset);
 
 }

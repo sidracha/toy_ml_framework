@@ -31,11 +31,11 @@ Parts that work:
 1-D Burgers: ∂u/∂t + u·∂u/∂x = ν·∂²u/∂x²
 
 Trained with data from forward euler, periodic boundary conditions,
-initial conditions combination of sines cosines random coefficients, modes up to 3
+fourier intitial conditions, 3 modes, random coefficients
 
-MSELoss + residual auxiliary loss: MSELoss(∂u/∂t + u·∂u/∂x - ν·∂²u/∂x², 0)
+MSELoss (teacher forced) + residual auxiliary loss: MSELoss(∂u/∂t + u·∂u/∂x - ν·∂²u/∂x², 0)
 
-(red=prediction, blue=target)
+(red=prediction, blue=target, single step predictor)
 
 ![Burgers Equation](burgers_comparison.gif)
 

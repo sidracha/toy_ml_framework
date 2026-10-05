@@ -22,10 +22,10 @@ void Dataset::shuffle() {
 }
 
 // run this before every one of your epochs
-void Dataset::prepare_epoch(int batch_size) {
+void Dataset::prepare_epoch(int batch_size, bool do_shuffle) {
 	epoch_tensors.clear();
 	index = 0;
-	shuffle();
+	if (do_shuffle) shuffle();
 	int N = data_tensors.size();
 	// thennn do the thing with the cat
 	int num_batches = std::ceil((double) N / (double) batch_size);
