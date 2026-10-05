@@ -97,8 +97,8 @@ Tensor burgers_residual(Tensor input, Tensor pred, double delta_x, double delta_
 	Tensor ut = (pred - input) / (delta_t);
 	
 	// now calculate ux and uxx
-	Tensor ux = delx_1d_periodic(pred, delta_x);
-	Tensor uxx = del2x_1d_periodic(pred, delta_x);
+	Tensor ux = delx_1d_periodic(pred, delta_x, input.dim()-1);
+	Tensor uxx = del2x_1d_periodic(pred, delta_x, input.dim()-1);
 
 	// now directly calculate the residual
 	Tensor residual = ut + pred*ux - uxx * nu;

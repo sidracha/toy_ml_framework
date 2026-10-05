@@ -20,6 +20,7 @@ public:
 	std::vector<int> normalize_dims;
 	double eps;
 	double delta_x;
+	int del_op_dim;
 
 	// backwards function takes in the current TensorNode
 	std::function<void(TensorNode*)> backward_fn;

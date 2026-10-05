@@ -2,6 +2,7 @@
 #include <matplot/matplot.h>
 #include <cmath>
 #include <filesystem>
+#include <iostream>
 
 void save_burgers_video(
     const std::vector<std::vector<double>>& pred_timesteps,
@@ -18,7 +19,12 @@ void save_burgers_video(
     f->position({0, 0, 900, 650});
 
     int num_timesteps = pred_timesteps.size();
+    if (num_timesteps == 0) {
+        std::cerr << "ERROR: No predictions to visualize!" << std::endl;
+        return;
+    }
     int num_points = pred_timesteps[0].size();
+    std::cout << "Visualizing " << num_timesteps << " timesteps, " << num_points << " points each" << std::endl;
 
     int max_frames = 60;
     int skip = std::max(1, num_timesteps / max_frames);
@@ -72,10 +78,12 @@ void save_burgers_video(
     int framerate = std::max(1, static_cast<int>(actual_frames / gif_duration));
     std::string fr = std::to_string(framerate);
 
-    std::string palette_cmd = "ffmpeg -y -framerate " + fr + " -i " + tmp_dir + "/frame_%d.png -vf palettegen " + tmp_dir + "/palette.png 2>/dev/null";
+    std::cout << "Generating GIF with " << actual_frames << " frames..." << std::endl;
+
+    std::string palette_cmd = "ffmpeg -y -framerate " + fr + " -i " + tmp_dir + "/frame_%d.png -vf palettegen " + tmp_dir + "/palette.png";
     system(palette_cmd.c_str());
 
-    std::string gif_cmd = "ffmpeg -y -framerate " + fr + " -i " + tmp_dir + "/frame_%d.png -i " + tmp_dir + "/palette.png -lavfi paletteuse -loop 0 " + filename + ".gif 2>/dev/null";
+    std::string gif_cmd = "ffmpeg -y -framerate " + fr + " -i " + tmp_dir + "/frame_%d.png -i " + tmp_dir + "/palette.png -lavfi paletteuse -loop 0 " + filename + ".gif";
     system(gif_cmd.c_str());
 
     std::filesystem::remove_all(tmp_dir);
