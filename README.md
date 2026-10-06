@@ -27,6 +27,7 @@ Parts that work:
 - Transformer/MLP train
 - Automatic graph clearing
 - Forward euler w/ periodic boundary conditions for 1-D Burgers, KdV, KS
+- Finite difference diffentible gradients
 
 1-D Burgers: ∂u/∂t + u·∂u/∂x = ν·∂²u/∂x²
 
